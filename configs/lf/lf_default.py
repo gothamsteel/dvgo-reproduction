@@ -16,14 +16,13 @@ fine_train = dict(
     N_iters=25000,
     N_rand=4096,
     ray_sampler='flatten',
-    weight_entropy_last_mid=0.001,
-    weight_sparse=0.01,
+    weight_distortion=1e-6,
     pg_scale=[1000,2000,3000,4000,5000,6000],
     decay_after_scale=1.0,
     tv_before=1e9,
     tv_dense_before=10000,
-    weight_tv_density=1e-5,
-    weight_tv_k0=1e-6,
+    weight_tv_density=1e-6,
+    weight_tv_k0=1e-7,
 )
 
 alpha_init = 1e-4
