@@ -30,7 +30,18 @@ def load_tankstemple_data(basedir, movie_render_kwargs={}):
 
     path_intrinsics = os.path.join(basedir, 'intrinsics.txt')
     H, W = imgs[0].shape[:2]
-    K = np.loadtxt(path_intrinsics)
+    try:
+        K = np.loadtxt(path_intrinsics)
+    except ValueError:
+        # NSVF ragged format: first row is "focal cx cy <k1>"
+        with open(path_intrinsics) as f:
+            row = [float(v) for v in f.readline().split()]
+        f_, cx, cy = row[0], row[1], row[2]
+        K = np.array([[f_, 0, cx, 0],
+                      [0, f_, cy, 0],
+                      [0,  0,  1, 0],
+                      [0,  0,  0, 1]])
+
     focal = float(K[0,0])
 
     ### generate spiral poses for rendering fly-through movie

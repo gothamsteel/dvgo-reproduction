@@ -2,7 +2,7 @@ import os, sys, copy, glob, json, time, random, argparse
 from shutil import copyfile
 from tqdm import tqdm, trange
 
-import mmcv
+from mmengine import Config
 import imageio
 import numpy as np
 
@@ -46,9 +46,9 @@ def config_parser():
     parser.add_argument("--render_video_factor", type=float, default=0,
                         help='downsampling factor to speed up rendering, set 4 or 8 for fast preview')
     parser.add_argument("--dump_images", action='store_true')
-    parser.add_argument("--eval_ssim", action='store_true')
-    parser.add_argument("--eval_lpips_alex", action='store_true')
-    parser.add_argument("--eval_lpips_vgg", action='store_true')
+    parser.add_argument("--eval_ssim", action='store_true', default=True)
+    parser.add_argument("--eval_lpips_alex", action='store_true', default=True)
+    parser.add_argument("--eval_lpips_vgg", action='store_true', default=True)
 
     # logging/saving options
     parser.add_argument("--i_print",   type=int, default=500,
@@ -126,6 +126,14 @@ def render_viewpoints(model, render_poses, HW, Ks, ndc, render_kwargs,
         if eval_ssim: print('Testing ssim', np.mean(ssims), '(avg)')
         if eval_lpips_vgg: print('Testing lpips (vgg)', np.mean(lpips_vgg), '(avg)')
         if eval_lpips_alex: print('Testing lpips (alex)', np.mean(lpips_alex), '(avg)')
+        
+        if savedir is not None:
+            with open(os.path.join(savedir, 'eval.txt'), 'w') as f:
+                f.write(f'Testing psnr {np.mean(psnrs):.4f}\n')
+                if eval_ssim: f.write(f'Testing ssim {np.mean(ssims):.4f}\n')
+                if eval_lpips_vgg: f.write(f'Testing lpips_vgg {np.mean(lpips_vgg):.4f}\n')
+                if eval_lpips_alex: f.write(f'Testing lpips_alex {np.mean(lpips_alex):.4f}\n')
+
 
     if render_video_flipy:
         for i in range(len(rgbs)):
@@ -426,9 +434,9 @@ def scene_rep_reconstruction(args, cfg, cfg_model, cfg_train, xyz_min, xyz_max, 
             rays_d = rays_d_tr[sel_i]
             viewdirs = viewdirs_tr[sel_i]
         elif cfg_train.ray_sampler == 'random':
-            sel_b = torch.randint(rgb_tr.shape[0], [cfg_train.N_rand])
-            sel_r = torch.randint(rgb_tr.shape[1], [cfg_train.N_rand])
-            sel_c = torch.randint(rgb_tr.shape[2], [cfg_train.N_rand])
+            sel_b = torch.randint(rgb_tr.shape[0], [cfg_train.N_rand], device=rgb_tr.device)
+            sel_r = torch.randint(rgb_tr.shape[1], [cfg_train.N_rand], device=rgb_tr.device)
+            sel_c = torch.randint(rgb_tr.shape[2], [cfg_train.N_rand], device=rgb_tr.device)
             target = rgb_tr[sel_b, sel_r, sel_c]
             rays_o = rays_o_tr[sel_b, sel_r, sel_c]
             rays_d = rays_d_tr[sel_b, sel_r, sel_c]
@@ -579,7 +587,7 @@ if __name__=='__main__':
     # load setup
     parser = config_parser()
     args = parser.parse_args()
-    cfg = mmcv.Config.fromfile(args.config)
+    cfg = Config.fromfile(args.config)
 
     # init enviroment
     if torch.cuda.is_available():

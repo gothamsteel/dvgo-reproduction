@@ -5,3 +5,8 @@
 *.dae
 data
 logs
+data/
+logs/
+capture*/
+*.tar
+*.pt

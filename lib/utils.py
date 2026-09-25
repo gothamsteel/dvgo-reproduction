@@ -49,7 +49,7 @@ def create_optimizer_or_freeze_model(model, cfg_train, global_step):
 ''' Checkpoint utils
 '''
 def load_checkpoint(model, optimizer, ckpt_path, no_reload_optimizer):
-    ckpt = torch.load(ckpt_path)
+    ckpt = torch.load(ckpt_path, weights_only=False)
     start = ckpt['global_step']
     model.load_state_dict(ckpt['model_state_dict'])
     if not no_reload_optimizer:
@@ -58,7 +58,7 @@ def load_checkpoint(model, optimizer, ckpt_path, no_reload_optimizer):
 
 
 def load_model(model_class, ckpt_path):
-    ckpt = torch.load(ckpt_path)
+    ckpt = torch.load(ckpt_path, weights_only=False)
     model = model_class(**ckpt['model_kwargs'])
     model.load_state_dict(ckpt['model_state_dict'])
     return model
