@@ -51,6 +51,26 @@ Barn's LPIPS is roughly double every other scene while its PSNR is
 unremarkable. Check against the paper's per-scene supplementary figures before
 claiming this is a reproduction artefact.
 
+### BlendedMVS, 4 scenes, NSVF subset, 768x576
+
+| Scene | PSNR | SSIM | LPIPS (vgg) | LPIPS (alex) | Paper PSNR |
+|---|---|---|---|---|---|
+| Jade | 27.790 | 0.917 | 0.105 | 0.072 | 27.68 |
+| Fountain | 28.176 | 0.921 | 0.117 | 0.087 | 28.48 |
+| Character | 30.278 | 0.963 | 0.046 | 0.029 | 30.31 |
+| Statues | 26.092 | 0.885 | 0.138 | 0.109 | 25.62 |
+| **mean (ours)** | **28.084** | **0.921** | **0.101** | **0.074** | |
+| **paper** | **28.02** | **0.922** | **0.101** | **0.075** | |
+
+Per-scene paper figures are from supplementary Table L3. Individual scenes
+differ from the paper by up to 0.47 dB in either direction (Statues +0.47,
+Fountain -0.30), while the mean lands 0.06 dB above. The errors do not share a
+sign, so this reads as run-to-run variation rather than a systematic gap.
+
+No code changes were needed for this benchmark. Each scene trained in about
+2 min 20 s, against 13.8 min on average reported on an RTX 2080 Ti
+(supplementary Table K2c).
+
 ### Two loader bugs found while reproducing
 
 **`lib/load_tankstemple.py`, ragged intrinsics.** Ignatius ships
@@ -279,6 +299,7 @@ a real glossy surface under real lighting; DTU scan69's glazed ceramic scored
 |---|---|---|---|
 | Synthetic-NeRF | 8 | 31.900 | original, rendered |
 | Tanks and Temples | 5 | 28.307 | original, real, masked |
+| BlendedMVS | 4 | 28.084 | original, rendered and blended with real photos |
 | DTU (IDR/NeuS subset) | 5 | 26.647 | new existing, real, calibrated rig, masked |
 | Constructed synthetic | 3 | 41.377 | new, rendered, exact poses |
 | Constructed real capture | 1 | 22.180 | new, phone, COLMAP poses |
@@ -338,6 +359,7 @@ python run.py --config configs/synth/cat.py --render_test --dump_images
 
 ## Known gaps
 
+- Synthetic-NSVF and DeepVoxels, two of the paper's five benchmarks, were not run.
 - DTU LPIPS-alex recorded for scan114 only.
 - The 22.180 real-capture run's terminal log was lost; its `eval.txt` survives
   in the render folder.
