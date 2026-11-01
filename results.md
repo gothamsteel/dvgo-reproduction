@@ -245,7 +245,36 @@ Fixed two-light setup, since the method assumes a point has one appearance.
 ### The pose-provenance comparison
 
 Cat (exact poses) 40.94 against the real capture (COLMAP poses) 22.18, a gap of
-18.8 dB.
+18.8 dB. This comparison changes two things at once, the pose source and the
+content, so it cannot attribute the gap to either.
+
+### Controlled test: the same renders, with COLMAP poses
+
+The 78 Blender cat renders were composited onto white and passed through the
+same COLMAP pipeline as the real capture (default quality, single camera,
+undistorted to PINHOLE). Masks come from the render alpha. The converter keeps
+the original 68/10 train/test split, so the test views are identical.
+
+| | exact poses | COLMAP poses |
+|---|---|---|
+| registered images | 78 / 78 | 78 / 78 |
+| mean reprojection error | n/a | 0.47 px |
+| mean track length | n/a | 8.60 |
+| test PSNR | 40.943 | **41.201** |
+| SSIM | 0.982 | 0.987 |
+| LPIPS (vgg) | 0.039 | 0.035 |
+| LPIPS (alex) | 0.020 | 0.021 |
+| train PSNR | 36.28 | 37.78 |
+
+**Estimated poses cost nothing on identical content.** The 0.26 dB difference
+is within run-to-run noise. Undistortion cropped the images from 776x1046 to
+773x1042, as it does for the real capture, so the two runs are evaluated on
+very slightly different pixels.
+
+Scope of the claim: COLMAP reached 0.47 px on clean renders against 1.25 px on
+the phone photos. This test shows that COLMAP-quality poses on clean images do
+not limit DVGO. It does not by itself show that the phone's poses cost nothing;
+the extreme-quality rerun below covers that case.
 
 ### What was ruled out on the real capture
 
@@ -270,10 +299,14 @@ Pose provenance is one contributor, not the whole story:
   fixed illumination.** The real capture has all four.
 - **Pose refinement did not help,** which argues directly against pose error
   being the dominant term.
+- **On identical content, COLMAP poses matched exact poses** (41.20 against
+  40.94), so pose estimation as a process is not what costs quality.
 
-The defensible claim: a hand-held structure-from-motion capture costs a large
-amount of reconstruction quality relative to a rendered scene, and the portion
-attributable to pose error alone is smaller than the headline gap.
+The defensible claim: a hand-held capture costs a large amount of
+reconstruction quality relative to a rendered scene, and two independent tests
+indicate that pose estimation is not the main cause. The remaining candidates
+are the capture itself (sensor noise, motion blur, exposure drift, real
+lighting) and the different object.
 
 ### Material has no measurable effect under fixed lighting
 
@@ -345,6 +378,18 @@ python run.py --config configs/real/can.py --render_test --dump_images
 blender -b -P scripts/blender_scene.py -- --model <model.blend> \
     --dst data/synth_cat --views 78 --radius 1.4
 python run.py --config configs/synth/cat.py --render_test --dump_images
+
+# synthetic, COLMAP poses (images composited onto white, masks from alpha)
+colmap automatic_reconstructor --workspace_path ~/cat_colmap \
+    --image_path ~/cat_colmap/images --single_camera 1 --sparse 1 --dense 0
+colmap image_undistorter --image_path ~/cat_colmap/images \
+    --input_path ~/cat_colmap/sparse/0 --output_path ~/cat_colmap/undistorted \
+    --output_type COLMAP --max_image_size 1046
+colmap model_converter --input_path ~/cat_colmap/undistorted/sparse \
+    --output_path ~/cat_colmap/undistorted/sparse_txt --output_type TXT
+python scripts/colmap_to_tnt.py ~/cat_colmap/undistorted data/synth_cat_colmap \
+    --masks ~/cat_colmap/masks --keep-split
+python run.py --config configs/synth/cat_colmap.py --render_test --dump_images
 ```
 
 ## Scene index
