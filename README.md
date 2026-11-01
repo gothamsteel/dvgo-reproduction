@@ -1,238 +1,194 @@
-# DirectVoxGO
+# Reproducing DVGO, and testing it on new data
 
-Direct Voxel Grid Optimization (CVPR2022 Oral, [project page](https://sunset1995.github.io/dvgo/), [DVGO paper](https://arxiv.org/abs/2111.11215), [DVGO v2 paper](https://arxiv.org/abs/2206.05085)).
+This repository is a reproduction study of **Direct Voxel Grid Optimization (DVGO)**
+(Sun, Sun and Chen, CVPR 2022), carried out for COMP8240 at Macquarie University.
 
-https://user-images.githubusercontent.com/2712505/153380311-19d6c3a1-9130-489a-af16-ad36c78f10a9.mp4
+It is a fork of the authors' code, [sunset1995/DirectVoxGO](https://github.com/sunset1995/DirectVoxGO).
+All method code is theirs. What this fork adds:
 
-https://user-images.githubusercontent.com/2712505/153380197-991d1689-6418-499c-a192-d757f9a64b64.mp4
+1. Patches to run the 2022 code on a 2026 software stack
+2. Two loader bug fixes found while reproducing
+3. Converters that bring four new data sources into the format DVGO reads
+4. Configs and results for every run reported in the final report
 
-### Custom casual capturing
-A [short guide](https://sunset1995.github.io/dvgo/tutor_forward_facing.html) to capture custom forward-facing scenes and rendering fly-through videos.
+Full numbers are in [`results.md`](results.md).
 
-Below are two rgb and depth fly-through videos from custom captured scenes.
+---
 
-https://user-images.githubusercontent.com/2712505/174267754-619d4f81-dd04-4c50-ba7f-434774cb890e.mp4
+## Results at a glance
 
-### Features
-- Speedup NeRF by replacing the MLP with the voxel grid.
-- Simple scene representation:
-    - *Volume densities*: dense voxel grid (3D).
-    - *View-dependent colors*: dense feature grid (4D) + shallow MLP.
-- Pytorch cuda extention built just-in-time for another 2--3x speedup.
-- O(N) realization for the distortion loss proposed by [mip-nerf 360](https://jonbarron.info/mipnerf360/).
-    - The loss improves our training time and quality.
-    - We have released a self-contained pytorch package: [torch_efficient_distloss](https://github.com/sunset1995/torch_efficient_distloss).
-    - Consider a batch of 8192 rays X 256 points.
-        - GPU memory consumption: 6192MB => 96MB.
-        - Run times for 100 iters: 20 sec => 0.2sec.
-- Supported datasets:
-    - *Bounded inward-facing*: [NeRF](https://drive.google.com/drive/folders/128yBriW1IG_3NJ5Rp7APSTZsJqdJdfc1), [NSVF](https://dl.fbaipublicfiles.com/nsvf/dataset/Synthetic_NSVF.zip), [BlendedMVS](https://dl.fbaipublicfiles.com/nsvf/dataset/BlendedMVS.zip), [T&T (masked)](https://dl.fbaipublicfiles.com/nsvf/dataset/TanksAndTemple.zip), [DeepVoxels](https://drive.google.com/open?id=1ScsRlnzy9Bd_n-xw83SP-0t548v63mPH).
-    - *Unbounded inward-facing*: [T&T](https://drive.google.com/file/d/11KRfN91W1AxAW6lOFs4EeYDbeoQZCi87/view?usp=sharing), [LF](https://drive.google.com/file/d/1gsjDjkbTh4GAR9fFqlIDZ__qR9NYTURQ/view?usp=sharing), [mip-NeRF360](https://jonbarron.info/mipnerf360/).
-    - *Foward-facing*: [LLFF](https://drive.google.com/drive/folders/14boI-o5hGO9srnWaaogTU5_ji7wkX2S7).
+| Source | Type | Scenes | Mean test PSNR | Paper |
+|---|---|---|---|---|
+| Synthetic-NeRF | original | 8 | 31.90 | 31.95 |
+| Tanks and Temples | original | 5 | 28.31 | 28.41 |
+| DTU (IDR/NeuS subset) | new, existing | 5 | 26.65 | n/a |
+| DL3DV bounded | new, existing | 4 | 17.67 | n/a |
+| Blender scenes | new, constructed | 3 | 41.38 | n/a |
+| Phone capture | new, constructed | 1 | 22.18 | n/a |
 
+SSIM and LPIPS (VGG and AlexNet) for every scene are in `results.md`.
 
-### Installation
+---
+
+## What changed from the original code
+
+**Environment patches** (needed for PyTorch 2.10 / CUDA 12.8):
+
+| File | Change |
+|---|---|
+| `run.py` | `mmcv.Config` replaced with `mmengine.Config` |
+| `lib/cuda/*.cu` | `AT_DISPATCH` uses `.scalar_type()` instead of the removed `.type()` |
+| `lib/utils.py`, `lib/grid.py` | `torch.load(..., weights_only=False)` |
+| `lib/load_llff.py` | imageio dropped `ignoregamma`, replaced with `apply_gamma` |
+
+**Bug fixes:**
+
+| File | Bug |
+|---|---|
+| `run.py` | Ray-sampling indices from `torch.randint` land on CUDA while images stay on CPU under `load2gpu_on_the_fly=True`. Crashes on Tanks and Temples. |
+| `lib/load_tankstemple.py` | Ignatius ships `intrinsics.txt` in the NSVF row format, the other four scenes ship a 4x4 matrix. `np.loadtxt` rejects the ragged file. |
+
+**Evaluation:** `run.py` computes SSIM and LPIPS by default and writes an
+`eval.txt` next to the test renders.
+
+---
+
+## Environment
+
+Tested on:
+
+| | |
+|---|---|
+| OS | Ubuntu 22.04.5 LTS |
+| GPU | NVIDIA GeForce RTX 4090 (driver 580.178.04) |
+| PyTorch | 2.10.0+cu128 |
+| CUDA | 12.8 |
+
+```bash
+conda create -n dvgo python=3.10
+conda activate dvgo
+pip install -r requirements-repro.txt
 ```
-git clone git@github.com:sunset1995/DirectVoxGO.git
-cd DirectVoxGO
-pip install -r requirements.txt
+
+`requirements-repro.txt` is the exact `pip freeze` of the environment used.
+The upstream `requirements.txt` is kept unchanged for reference.
+
+The CUDA extensions in `lib/cuda/` compile on first run.
+
+---
+
+## Data
+
+No data is stored in this repository. Place each dataset under `data/`.
+
+| Dataset | Source |
+|---|---|
+| Synthetic-NeRF | The official link in the upstream README is dead. Used a Kaggle mirror: TODO add link |
+| Tanks and Temples (NSVF masked subset) | Linked from the upstream README |
+| DTU (IDR/NeuS preprocessed, 15 scans) | TODO add link |
+| DL3DV-10K Benchmark | Hugging Face, requires accepting the terms of use. `download.py` fetches selected scenes. TODO verify link |
+| Blender models | CC0 models, TODO add source links |
+| Phone capture | Captured for this project, TODO decide whether to release |
+
+---
+
+## Reproducing
+
+### Original data
+
+```bash
+python run.py --config configs/nerf/lego.py --render_test --dump_images
+python run.py --config configs/tankstemple/Ignatius.py --render_test --dump_images
 ```
-[Pytorch](https://pytorch.org/) and [torch_scatter](https://github.com/rusty1s/pytorch_scatter) installation is machine dependent, please install the correct version for your machine.
 
-<details>
-  <summary> Dependencies (click to expand) </summary>
+Replace with any scene under `configs/nerf/` or `configs/tankstemple/`.
 
-  - `PyTorch`, `numpy`, `torch_scatter`: main computation.
-  - `scipy`, `lpips`: SSIM and LPIPS evaluation.
-  - `tqdm`: progress bar.
-  - `mmcv`: config system.
-  - `opencv-python`: image processing.
-  - `imageio`, `imageio-ffmpeg`: images and videos I/O.
-  - `Ninja`: to build the newly implemented torch extention just-in-time.
-  - `einops`: torch tensor shaping with pretty api.
-  - `torch_efficient_distloss`: O(N) realization for the distortion loss.
-</details>
+### DTU
 
+```bash
+python scripts/dtu_to_tnt.py data/DTU/dtu_scan114 data/dtu_tnt/dtu_scan114
+python run.py --config configs/dtu/scan114.py --render_test --dump_images
+```
 
-## Directory structure for the datasets
+Scans: 69, 97, 105, 114, 118.
 
-<details>
-  <summary> (click to expand;) </summary>
+DTU is converted to the Tanks and Temples layout, not the Blender layout. The
+Blender loader stores only a focal length and assumes the principal point is at
+the image centre. DTU's is not, and the Blender path cost 6.4 dB on scan114.
 
-    data
-    ├── nerf_synthetic     # Link: https://drive.google.com/drive/folders/128yBriW1IG_3NJ5Rp7APSTZsJqdJdfc1
-    │   └── [chair|drums|ficus|hotdog|lego|materials|mic|ship]
-    │       ├── [train|val|test]
-    │       │   └── r_*.png
-    │       └── transforms_[train|val|test].json
-    │
-    ├── Synthetic_NSVF     # Link: https://dl.fbaipublicfiles.com/nsvf/dataset/Synthetic_NSVF.zip
-    │   └── [Bike|Lifestyle|Palace|Robot|Spaceship|Steamtrain|Toad|Wineholder]
-    │       ├── intrinsics.txt
-    │       ├── rgb
-    │       │   └── [0_train|1_val|2_test]_*.png
-    │       └── pose
-    │           └── [0_train|1_val|2_test]_*.txt
-    │
-    ├── BlendedMVS         # Link: https://dl.fbaipublicfiles.com/nsvf/dataset/BlendedMVS.zip
-    │   └── [Character|Fountain|Jade|Statues]
-    │       ├── intrinsics.txt
-    │       ├── rgb
-    │       │   └── [0|1|2]_*.png
-    │       └── pose
-    │           └── [0|1|2]_*.txt
-    │
-    ├── TanksAndTemple     # Link: https://dl.fbaipublicfiles.com/nsvf/dataset/TanksAndTemple.zip
-    │   └── [Barn|Caterpillar|Family|Ignatius|Truck]
-    │       ├── intrinsics.txt
-    │       ├── rgb
-    │       │   └── [0|1|2]_*.png
-    │       └── pose
-    │           └── [0|1|2]_*.txt
-    │
-    ├── deepvoxels         # Link: https://drive.google.com/drive/folders/1ScsRlnzy9Bd_n-xw83SP-0t548v63mPH
-    │   └── [train|validation|test]
-    │       └── [armchair|cube|greek|vase]
-    │           ├── intrinsics.txt
-    │           ├── rgb/*.png
-    │           └── pose/*.txt
-    │
-    ├── nerf_llff_data     # Link: https://drive.google.com/drive/folders/128yBriW1IG_3NJ5Rp7APSTZsJqdJdfc1
-    │   └── [fern|flower|fortress|horns|leaves|orchids|room|trex]
-    │
-    ├── tanks_and_temples  # Link: https://drive.google.com/file/d/11KRfN91W1AxAW6lOFs4EeYDbeoQZCi87/view?usp=sharing
-    │   └── [tat_intermediate_M60|tat_intermediate_Playground|tat_intermediate_Train|tat_training_Truck]
-    │       └── [train|test]
-    │           ├── intrinsics/*txt
-    │           ├── pose/*txt
-    │           └── rgb/*jpg
-    │
-    ├── lf_data            # Link: https://drive.google.com/file/d/1gsjDjkbTh4GAR9fFqlIDZ__qR9NYTURQ/view?usp=sharing
-    │   └── [africa|basket|ship|statue|torch]
-    │       └── [train|test]
-    │           ├── intrinsics/*txt
-    │           ├── pose/*txt
-    │           └── rgb/*jpg
-    │
-    ├── 360_v2             # Link: https://jonbarron.info/mipnerf360/
-    │   └── [bicycle|bonsai|counter|garden|kitchen|room|stump]
-    │       ├── poses_bounds.npy
-    │       └── [images_2|images_4]
-    │
-    ├── nerf_llff_data     # Link: https://drive.google.com/drive/folders/14boI-o5hGO9srnWaaogTU5_ji7wkX2S7
-    │   └── [fern|flower|fortress|horns|leaves|orchids|room|trex]
-    │       ├── poses_bounds.npy
-    │       └── [images_2|images_4]
-    │
-    └── co3d               # Link: https://github.com/facebookresearch/co3d
-        └── [donut|teddybear|umbrella|...]
-            ├── frame_annotations.jgz
-            ├── set_lists.json
-            └── [129_14950_29917|189_20376_35616|...]
-                ├── images
-                │   └── frame*.jpg
-                └── masks
-                    └── frame*.png
-</details>
+### DL3DV
 
+```bash
+python download.py   # see file for scene selection
+python scripts/dl3dv_to_tnt.py DL3DV-10K-Benchmark/<hash>/nerfstudio data/dl3dv_<name>
+python run.py --config configs/dl3dv/<name>.py --render_test --dump_images
+```
 
+| Config | Scene | Note |
+|---|---|---|
+| `nonreflect.py` | a401469c | |
+| `nonreflect2.py` | 35317e62 | |
+| `reflect1.py` | d1b3a0b3 | |
+| `reflect2.py` | d9f4c746 | |
+| `nonreflect_high.py` | a401469c | ablation, 256³ grid |
+| `scene1.py` | 0a485338 | discarded, labelled unbounded |
 
-## GO
+Full hashes are in `results.md`.
 
-- Training
-    ```bash
-    $ python run.py --config configs/nerf/lego.py --render_test
-    ```
-    Use `--i_print` and `--i_weights` to change the log interval.
-- Evaluation
-    To only evaluate the testset `PSNR`, `SSIM`, and `LPIPS` of the trained `lego` without re-training, run:
-    ```bash
-    $ python run.py --config configs/nerf/lego.py --render_only --render_test \
-                                                  --eval_ssim --eval_lpips_vgg
-    ```
-    Use `--eval_lpips_alex` to evaluate LPIPS with pre-trained Alex net instead of VGG net.
-- Render video
-    ```bash
-    $ python run.py --config configs/nerf/lego.py --render_only --render_video
-    ```
-    Use `--render_video_factor 4` for a fast preview.
-- Reproduction: all config files to reproduce our results.
-    <details>
-        <summary> (click to expand) </summary>
+### Phone capture
 
-        $ ls configs/*
-        configs/blendedmvs:
-        Character.py  Fountain.py  Jade.py  Statues.py
+```bash
+colmap automatic_reconstructor --workspace_path ./capture \
+    --image_path ./capture/images --single_camera 1 --sparse 1 --dense 0 \
+    --quality extreme
+colmap image_undistorter --image_path capture/images \
+    --input_path capture/sparse/0 --output_path capture/undistorted \
+    --output_type COLMAP --max_image_size 1046
+python scripts/sam2_masks.py capture/undistorted/images capture/masks \
+    --ckpt ~/sam2_ckpt/sam2.1_hiera_large.pt --point 388 500
+python scripts/colmap_to_tnt.py capture/undistorted data/real_can \
+    --masks capture/masks
+python run.py --config configs/real/can.py --render_test --dump_images
+```
 
-        configs/nerf:
-        chair.py  drums.py  ficus.py  hotdog.py  lego.py  materials.py  mic.py  ship.py
+### Blender scenes
 
-        configs/nsvf:
-        Bike.py  Lifestyle.py  Palace.py  Robot.py  Spaceship.py  Steamtrain.py  Toad.py  Wineholder.py
+```bash
+blender -b -P scripts/blender_scene.py -- --model <model.blend> \
+    --dst data/synth_cat --views 78 --radius 1.4
+python run.py --config configs/synth/cat.py --render_test --dump_images
+```
 
-        configs/tankstemple:
-        Barn.py  Caterpillar.py  Family.py  Ignatius.py  Truck.py
+Scenes: `cat`, `propane`, `lion`.
 
-        configs/deepvoxels:
-        armchair.py  cube.py  greek.py  vase.py
+---
 
-        configs/tankstemple_unbounded:
-        M60.py  Playground.py  Train.py  Truck.py
+## Repository map
 
-        configs/lf:
-        africa.py  basket.py  ship.py  statue.py  torch.py
+| Path | Contents |
+|---|---|
+| `run.py`, `lib/` | DVGO, with the patches above |
+| `configs/nerf/`, `configs/tankstemple/` | upstream configs, unchanged |
+| `configs/dtu/`, `configs/dl3dv/`, `configs/real/`, `configs/synth/` | configs for new data |
+| `scripts/dtu_to_tnt.py` | DTU (IDR/NeuS) to Tanks and Temples layout |
+| `scripts/dl3dv_to_tnt.py` | DL3DV (nerfstudio) to Tanks and Temples layout |
+| `scripts/colmap_to_tnt.py` | COLMAP to Tanks and Temples layout, centres on masked points |
+| `scripts/sam2_masks.py` | object masks with SAM 2.1 video propagation |
+| `scripts/blender_scene.py` | headless Blender render with exact camera poses |
+| `download.py` | DL3DV scene downloader |
+| `results.md` | every number reported |
 
-        configs/nerf_unbounded:
-        bicycle.py  bonsai.py  counter.py  garden.py  kitchen.py  room.py  stump.py
+---
 
-        configs/llff:
-        fern.py  flower.py  fortress.py  horns.py  leaves.py  orchids.py  room.py  trex.py
-    </details>
+## Citation
 
-### Custom casually captured scenes
-Coming soon hopefully.
+```bibtex
+@inproceedings{sun2022direct,
+  title     = {Direct Voxel Grid Optimization: Super-fast Convergence for Radiance Fields Reconstruction},
+  author    = {Sun, Cheng and Sun, Min and Chen, Hwann-Tzong},
+  booktitle = {CVPR},
+  year      = {2022}
+}
+```
 
-### Development and tuning guide
-#### Extention to new dataset
-Adjusting the data related config fields to fit your camera coordinate system is recommend before implementing a new one.
-We provide two visualization tools for debugging.
-1. Inspect the camera and the allocated BBox.
-    - Export via `--export_bbox_and_cams_only {filename}.npz`:
-      ```bash
-      python run.py --config configs/nerf/mic.py --export_bbox_and_cams_only cam_mic.npz
-      ```
-    - Visualize the result:
-      ```bash
-      python tools/vis_train.py cam_mic.npz
-      ```
-2. Inspect the learned geometry after coarse optimization.
-    - Export via `--export_coarse_only {filename}.npz` (assumed `coarse_last.tar` available in the train log):
-      ```bash
-      python run.py --config configs/nerf/mic.py --export_coarse_only coarse_mic.npz
-      ```
-    - Visualize the result:
-      ```bash
-      python tools/vis_volume.py coarse_mic.npz 0.001 --cam cam_mic.npz
-      ```
-
-| Inspecting the cameras & BBox | Inspecting the learned coarse volume |
-|:-:|:-:|
-|![](figs/debug_cam_and_bbox.png)|![](figs/debug_coarse_volume.png)|
-
-
-
-#### Speed and quality tradeoff
-We have reported some ablation experiments in our paper supplementary material.
-Setting `N_iters`, `N_rand`, `num_voxels`, `rgbnet_depth`, `rgbnet_width` to larger values or setting `stepsize` to smaller values typically leads to better quality but need more computation.
-The `weight_distortion` affects the training speed and quality as well.
-Only `stepsize` is tunable in testing phase, while all the other fields should remain the same as training.
-
-## Advanced data structure
-- **Octree** — [Plenoxels: Radiance Fields without Neural Networks](https://alexyu.net/plenoxels/).
-- **Hash** — [Instant Neural Graphics Primitives with a Multiresolution Hash Encoding](https://nvlabs.github.io/instant-ngp/).
-- **Factorized components** — [TensoRF: Tensorial Radiance Fields](https://apchenstu.github.io/TensoRF/).
-
-You will need them for scaling to a higher grid resolution. But we believe our simplest dense grid could still be your good starting point if you have other challenging problems to deal with.
-
-## Acknowledgement
-The code base is origined from an awesome [nerf-pytorch](https://github.com/yenchenlin/nerf-pytorch) implementation, but it becomes very different from the code base now.
+Licence: see [`LICENSE`](LICENSE), inherited from the upstream repository.
