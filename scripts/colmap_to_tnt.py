@@ -107,6 +107,8 @@ def main():
     ap.add_argument("--masks", default=None)
     ap.add_argument("--sparse", default="sparse_txt")
     ap.add_argument("--test-every", type=int, default=8)
+    ap.add_argument("--keep-split", action="store_true",
+                    help="keep the 0_/1_ train/test prefix of the input names")
     ap.add_argument("--object-radius", type=float, default=1.0,
                     help="scale so the object's 90th-percentile point radius "
                          "equals this (default 1.0, matching the DTU scans)")
@@ -200,7 +202,10 @@ def main():
             if m is not None:
                 alpha = (m * 255).astype(np.uint8)
 
-        split = 1 if i in test_idx else 0
+        if args.keep_split and name[:2] in ("0_", "1_"):
+            split = int(name[0])
+        else:
+            split = 1 if i in test_idx else 0
         n_test += split
         n_train += 1 - split
         stem = f"{split}_{i:03d}"
