@@ -1,0 +1,15 @@
+This image is a 3D reconstruction rendered from a new viewpoint.
+
+Does the image contain visible reconstruction artefacts?
+
+Answer Yes if you can clearly see any of these:
+- floaters: semi-transparent blobs, haze or specks floating in empty space
+- specks: the image looks grainy or dotted, like a point cloud
+- holes: parts of an object or surface that are missing
+- broken geometry: surfaces that look melted, streaked, torn, or doubled
+
+Answer No if the image looks like a clean photo or rendering.
+
+Ignore mild overall softness or slight blur, colour, brightness or lighting, what the object is or whether it looks nice, and the plain white background itself.
+
+Answer with one word: Yes or No.
