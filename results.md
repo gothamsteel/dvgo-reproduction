@@ -1,22 +1,17 @@
 # Results
 
-DVGO (Sun et al., CVPR 2022) reproduced on the original data, then applied to
-four data sources it was not evaluated on, and checked with an LLM judge. All
-runs on an RTX 4090 with the released per-scene configs at the paper's
-M(f) = 160^3 setting, unless a run is explicitly marked as an ablation.
+Every number in the final report, per scene. The analysis is in the report;
+the commands are in [`README.md`](README.md).
 
-Every new dataset is converted to the `tankstemple` layout and read by the same
-loader, so the loader is not a variable in any comparison below.
-
-Paper figures are from Table 1 of the main paper and the per-scene tables of
-the supplementary material (Tables L1 to L5). Commands to reproduce every run
-are in [`README.md`](README.md).
-
----
+All runs: RTX 4090, the authors' released configs, grid size M(f) = 160^3,
+unless marked as an ablation. Every new dataset is converted to the Tanks and
+Temples layout and read by the same loader. Paper values are from the paper's
+supplementary Tables L1 to L5 (per scene) and K2 (training time, RTX 2080 Ti).
+Test-path videos for every new-data scene are in `media/videos/`.
 
 ## 1. Original data
 
-### Synthetic-NeRF, 8 scenes, 100 train / 200 test, 800x800
+### Synthetic-NeRF (8 scenes, 100 train / 200 test, 800x800)
 
 | Scene | PSNR | Paper PSNR | SSIM | LPIPS (vgg) | LPIPS (alex) |
 |---|---|---|---|---|---|
@@ -31,14 +26,11 @@ are in [`README.md`](README.md).
 | **mean (ours)** | **31.900** | | **0.956** | **0.054** | **0.035** |
 | **paper** | | **31.95** | **0.957** | **0.053** | **0.035** |
 
-Within 0.05 dB on PSNR, 0.001 on SSIM, exact on LPIPS-alex. Per-scene paper
-values are from supplementary Table L1.
+lego was trained twice, six weeks apart: 34.641032826900485 and
+34.64103285074234, equal to seven decimal places, so training is effectively
+deterministic on this machine.
 
-lego was run twice, six weeks apart on the same machine: 34.641032826900485 and
-34.64103285074234. Agreement to seven decimal places means the remaining
-difference against the paper is not run-to-run variance on our side.
-
-### Synthetic-NSVF, 8 scenes, 100 train / 200 test, 800x800
+### Synthetic-NSVF (8 scenes, 100 train / 200 test, 800x800)
 
 | Scene | PSNR | Paper PSNR | SSIM | LPIPS (vgg) | LPIPS (alex) | Train time |
 |---|---|---|---|---|---|---|
@@ -53,14 +45,20 @@ difference against the paper is not run-to-run variance on our side.
 | **mean (ours)** | **34.933** | | **0.975** | **0.033** | **0.019** | 2:04 |
 | **paper** | | **35.08** | **0.975** | **0.033** | **0.019** | 13.2 min |
 
-SSIM and both LPIPS averages match the paper exactly. PSNR is 0.15 dB below,
-and all eight scenes are below, by 0.04 to 0.21 dB. Per-scene paper values
-are from supplementary Table L2, the paper's training times from Table K2b
-(RTX 2080 Ti).
+### BlendedMVS (4 scenes, NSVF subset, 768x576)
 
----
+| Scene | PSNR | Paper PSNR | SSIM | LPIPS (vgg) | LPIPS (alex) |
+|---|---|---|---|---|---|
+| Jade | 27.790 | 27.68 | 0.917 | 0.105 | 0.072 |
+| Fountain | 28.176 | 28.48 | 0.921 | 0.117 | 0.087 |
+| Character | 30.278 | 30.31 | 0.963 | 0.046 | 0.029 |
+| Statues | 26.092 | 25.62 | 0.885 | 0.138 | 0.109 |
+| **mean (ours)** | **28.084** | | **0.921** | **0.101** | **0.074** |
+| **paper** | | **28.02** | **0.922** | **0.101** | **0.075** |
 
-### Tanks and Temples, 5 scenes, NSVF masked subset, 1920x1080
+About 2 min 20 s of training per scene (paper: 13.8 min).
+
+### Tanks and Temples (5 scenes, NSVF masked subset, 1920x1080)
 
 | Scene | PSNR | Paper PSNR | SSIM | LPIPS (vgg) | LPIPS (alex) |
 |---|---|---|---|---|---|
@@ -72,34 +70,9 @@ are from supplementary Table L2, the paper's training times from Table K2b
 | **mean (ours)** | **28.307** | | **0.910** | **0.157** | **0.151** |
 | **paper** | | **28.41** | **0.911** | **0.155** | **0.148** |
 
-Four of five scenes are slightly below the paper, by at most 0.29 dB
-(Caterpillar). Per-scene paper values are from supplementary Table L4.
+Barn's high LPIPS matches the paper's own (0.294 VGG, 0.290 AlexNet).
 
-Barn's LPIPS is roughly double every other scene. This is a property of the
-scene, not of the reproduction: the paper's own Barn LPIPS is 0.294 (VGG) and
-0.290 (AlexNet).
-
-### BlendedMVS, 4 scenes, NSVF subset, 768x576
-
-| Scene | PSNR | Paper PSNR | SSIM | LPIPS (vgg) | LPIPS (alex) |
-|---|---|---|---|---|---|
-| Jade | 27.790 | 27.68 | 0.917 | 0.105 | 0.072 |
-| Fountain | 28.176 | 28.48 | 0.921 | 0.117 | 0.087 |
-| Character | 30.278 | 30.31 | 0.963 | 0.046 | 0.029 |
-| Statues | 26.092 | 25.62 | 0.885 | 0.138 | 0.109 |
-| **mean (ours)** | **28.084** | | **0.921** | **0.101** | **0.074** |
-| **paper** | | **28.02** | **0.922** | **0.101** | **0.075** |
-
-Per-scene paper values are from supplementary Table L3. Individual scenes
-differ from the paper by up to 0.47 dB in either direction (Statues +0.47,
-Fountain -0.30), while the mean lands 0.06 dB above. The errors do not share a
-sign, so this reads as run-to-run variation rather than a systematic gap.
-
-No code changes were needed for this benchmark. Each scene trained in about
-2 min 20 s, against 13.8 min on average reported on an RTX 2080 Ti
-(supplementary Table K2c).
-
-### DeepVoxels, 4 scenes, 479 train / 1000 test, 512x512
+### DeepVoxels (4 scenes, 479 train / 1000 test, 512x512)
 
 | Scene | Paper's name | PSNR | Paper PSNR | SSIM | LPIPS (vgg) | LPIPS (alex) | Train time |
 |---|---|---|---|---|---|---|---|
@@ -110,318 +83,86 @@ No code changes were needed for this benchmark. Each scene trained in about
 | **mean (ours)** | | **45.513** | | **0.998** | **0.007** | **0.003** | 2:11 |
 | **paper** | | | **45.83** | **0.998** | **0.006** | **0.002** | 14.3 min |
 
-The dataset folders are `armchair`, `greek`, `cube` and `vase`; supplementary
-Table L5 calls them Chair, Pedestal, Cube and Vase. The scores confirm the
-match (armchair 48.39 against Chair 48.48, greek 48.52 against Pedestal
-48.51). The download also holds two scenes the paper does not use, `bus` and
-`shoe`. DVGO printed cube's training time as `00:01:60`, a rounding quirk in
-its timer, so about 2:00.
+DVGO printed cube's training time as `00:01:60`, a rounding quirk in its timer.
+Synthetic-NSVF and DeepVoxels were re-rendered from their checkpoints with
+`--render_only --render_test --dump_images`; all 12 scenes gave the same PSNR.
 
-The mean is 0.32 dB below the paper, the largest gap of the five benchmarks,
-and it comes from cube (-0.51) and vase (-0.65). At these scores PSNR is very
-sensitive. Converted to root-mean-square error on a 0 to 255 scale, the
-paper's 42.54 dB on vase is 1.90 grey levels and our 41.89 dB is 2.05, a
-difference of 0.15 grey levels. For comparison, ficus on Synthetic-NeRF
-(-0.20 dB at 32.6 dB) differs by 0.13 grey levels. The authors' own
-`IMPROVING_LOG.md` states: "The PSNRs of different versions on different
-machines have about 0.2 PSNR drift."
+## 2. New existing data
 
-Synthetic-NSVF and DeepVoxels were trained without `--dump_images`, then
-re-rendered from the saved checkpoints with
-`--render_only --render_test --dump_images`. All 12 scenes gave exactly the
-same test PSNR the second time.
-
-### Two loader bugs found while reproducing
-
-**`lib/load_tankstemple.py`, ragged intrinsics.** Ignatius ships
-`intrinsics.txt` in the NSVF format, one row of `focal cx cy k1` plus padding
-rows, while the other four scenes ship a 4x4 matrix. `np.loadtxt` rejects the
-ragged file and the scene cannot load. Two different formats inside one
-released benchmark.
-
-**`run.py`, ray-sampling device.** These configs set
-`load2gpu_on_the_fly=True`, which keeps images on the CPU, while
-`torch.randint` returns CUDA indices under a modern PyTorch default. Indexing a
-CPU tensor with CUDA indices raises. The synthetic scenes are small enough to
-stay on the GPU, so the bug appears only here.
-
-Neither is a flaw in the method. Both are the cost of running a 2022 codebase
-in 2026, on a benchmark release whose files are not packaged consistently.
-
----
-
-## 2. New existing data: DTU
-
-DTU (Jensen et al. 2014), in the 15-scan subset preprocessed by IDR and NeuS:
-`image/`, `mask/`, and a `cameras_sphere.npz` of world-to-image projection
-matrices normalised into a unit sphere. The raw release is 123 GB and ships
-calibration in DTU's own format, so the preprocessed subset is used and cited
-as such.
-
-Converted with `scripts/dtu_to_tnt.py`: projection matrices decomposed into
-intrinsics and camera-to-world poses, masks composited into alpha, one view in
-eight held out.
+### DTU (IDR/NeuS preprocessed subset, 1600x1200, 1 view in 8 held out)
 
 | Scan | Views | PSNR | SSIM | LPIPS (vgg) | Train PSNR | Gap |
 |---|---|---|---|---|---|---|
-| scan69 | **49** | **23.100** | 0.897 | **0.214** | 32.80 | **9.70** |
+| scan69 | 49 | 23.100 | 0.897 | 0.214 | 32.80 | 9.70 |
 | scan97 | 64 | 26.047 | 0.911 | 0.165 | 29.77 | 3.72 |
 | scan105 | 64 | 28.801 | 0.928 | 0.148 | 34.11 | 5.31 |
 | scan114 | 64 | 28.071 | 0.907 | 0.168 | 31.65 | 3.58 |
 | scan118 | 64 | 27.216 | 0.939 | 0.142 | 30.73 | 3.51 |
 | **mean** | | **26.647** | **0.916** | **0.167** | | |
 
-**Verdict: feasible, as predicted.** The mean is 1.7 dB below Tanks and Temples
-(28.31 here), the paper's only fully real benchmark, on data the method was
-never tested on.
-
-**scan69 is the outlier and is confounded.** It has 49 views instead of 64,
-and it is glazed ceramic with visible specular highlights. Its training PSNR is
-the second highest at 32.80, so it fits its training views and fails on
-held-out ones: a 9.70 dB gap against 3.5 to 5.3 for the rest. View count and
-material cannot be separated from this run alone. The controlled version would
-retrain scan105 on scan69's training-view count; not done.
-
-### Ablation: the file format is worth 6.4 dB
-
-scan114 converted two ways, everything else identical.
+**Data format ablation (scan114, everything else identical):**
 
 | Format | PSNR | SSIM | LPIPS (vgg) | LPIPS (alex) | Train PSNR |
 |---|---|---|---|---|---|
-| blender | 21.679 | 0.788 | 0.260 | 0.233 | 28.23 |
-| tankstemple | **28.071** | **0.907** | **0.168** | **0.132** | 31.65 |
+| Synthetic-NeRF (Blender) | 21.679 | 0.788 | 0.260 | 0.233 | 28.23 |
+| Tanks and Temples | **28.071** | **0.907** | **0.168** | **0.132** | 31.65 |
 
-The blender path stores only a focal length, and `lib/load_data.py` then
-builds K with the principal point at the image centre:
+The Blender format stores only a focal length, so the loader puts the
+principal point at the image centre, (800, 600). DTU's calibrated principal
+point is (823.2, 619.1).
 
-```python
-if K is None:
-    K = np.array([[focal, 0, 0.5*W], [0, focal, 0.5*H], [0, 0, 1]])
-```
+### DL3DV (960x540, 1 view in 8 held out, no masks)
 
-DTU's calibrated principal point is (823.2, 619.1) against an image centre of
-(800, 600), and its fx and fy differ by 9 px. Every ray was aimed roughly 23 px
-off. **The renders looked correct.** Only the train/test PSNR gap exposed it:
-6.55 dB before, 3.58 dB after. The tankstemple loader reads a full K from
-`intrinsics.txt`, so nothing is discarded.
-
-Diagnostic worth keeping: a large train/test gap with visually plausible
-renders points to the camera model, not the reconstruction.
-
-Test-path videos for every scan are in `media/videos/dtu__*.mp4`.
-
----
-
-## 3. New existing data: DL3DV
-
-DL3DV-10K Benchmark, chosen in the proposal for one reason: every scene carries
-labels for indoor/outdoor, reflection and transparency, so a matched set can
-be selected in advance. Four bounded shopping-mall scenes with the same
-lighting label, nontransparent, two labelled reflective and two not.
-
-Converted with `scripts/dl3dv_to_tnt.py`. 960x540 (images_4), one view in eight
-held out, `white_bkgd=False` since these are whole scenes, not masked objects.
-
-| Hash | Label | Views | PSNR | SSIM | LPIPS (vgg) | Train PSNR |
+| Scene | Label | Views | PSNR | SSIM | LPIPS (vgg) | Train PSNR |
 |---|---|---|---|---|---|---|
-| a401469c | nonreflection | 359 | 16.762 | 0.544 | 0.580 | 23.95 |
-| 35317e62 | nonreflection | 381 | 18.794 | 0.584 | 0.502 | 23.92 |
-| d1b3a0b3 | reflection | 319 | 15.588 | 0.473 | 0.619 | 23.16 |
-| d9f4c746 | reflection | 325 | 19.536 | 0.651 | 0.498 | 23.17 |
-| **nonreflection mean** | | | **17.778** | 0.564 | 0.541 | |
-| **reflection mean** | | | **17.562** | 0.562 | 0.559 | |
+| a401469c | non-reflective | 359 | 16.762 | 0.544 | 0.580 | 23.95 |
+| 35317e62 | non-reflective | 381 | 18.794 | 0.584 | 0.502 | 23.92 |
+| d1b3a0b3 | reflective | 319 | 15.588 | 0.473 | 0.619 | 23.16 |
+| d9f4c746 | reflective | 325 | 19.536 | 0.651 | 0.498 | 23.17 |
+| **mean** | | | **17.670** | | | |
 
-**The reflection label predicts nothing.** The group means differ by 0.22 dB,
-while the spread inside the reflective group alone is 3.9 dB. Whatever is
-limiting these reconstructions is not the material.
-
-**Training PSNR is flat at 23.2 to 24.0 across all four.** Four different
-scenes, 319 to 381 views each, and the same ceiling. DVGO cannot fit the
-training images, so the test scores are measuring a failure that happens before
-generalisation is in question.
-
-### What was ruled out
-
-| Hypothesis | Test | Result |
+| Ruled-out cause | Test | Result |
 |---|---|---|
-| Scene out of scope | checked the `environment` label | all four are `bounded` |
-| Voxel resolution | rerun at 256^3 on a401469c | 16.676 vs 16.762, no change |
-| Lens distortion dropped | per-pixel error, edges vs centre | ratio 1.18, error is spread evenly |
+| Voxel resolution | 256^3 grid on a401469c | test 16.676 (was 16.762), train 24.92 (was 23.95) |
+| Lens distortion | per-pixel error, image edges vs centre | ratio 1.18, error spread evenly |
 
-The 256^3 run is the informative one: training PSNR rose from 23.95 to 24.92
-while test stayed flat. Extra capacity fit the training views better and
-generalised no better, so capacity was never the constraint.
+A fifth scene, 0a485338, was discarded because DL3DV labels it unbounded.
 
-The distortion check rests on radial distortion being zero on the optical axis
-and growing with radius. If dropping k1 and k2 were the cause, error would
-concentrate at the frame edges. A ratio of 1.18 says it does not.
-
-### Remaining hypothesis, untested
-
-A hand-held walk-through video with running auto-exposure and auto-white-balance
-gives the same surface a different colour in different frames. No single
-radiance field can fit that, which matches a training ceiling independent of
-capacity, scene and material. This is the failure mode the proposal predicted
-for PhotoTourism, appearing in DL3DV instead.
-
-Stated as a hypothesis, not a finding. Testing it would mean measuring exposure
-drift across frames, which was not done.
-
-### Scope note
-
-A fifth scene, `0a485338`, was run and discarded: the metadata labels it
-`unbounded` (an outdoor square, open sky). DL3DV's `bounded` label means
-enclosed, not object-scale, which is a weaker condition than the paper's
-bounded inward-facing setting. The annotation that made this dataset attractive
-does not carry the meaning the proposal assumed.
-
-Test-path videos for every scene are in `media/videos/dl3dv__*.mp4`.
-
----
-
-## 4. Newly constructed data
-
-Two datasets built for this project, differing in where the camera poses come
-from. Both bounded, inward-facing, masked, 78 views split 68 train / 10 test,
-776x1046, both through the same loader.
-
-### Phone capture, COLMAP poses
-
-80 phone photos of a chocolate tin, 2 discarded for landscape orientation while
-the rest were portrait, **78 of 78 remaining images registered** by COLMAP.
-Undistorted to a PINHOLE camera. Object masks by SAM 2.1 video propagation
-(`scripts/sam2_masks.py`), one click on frame 0. Converted with
-`scripts/colmap_to_tnt.py`, which normalises the scene on the sparse points
-whose 2D observations fall inside the masks. Config: `configs/real/can_sam_v2.py`.
-
-### Blender scenes, exact poses
-
-CC0 models from Poly Haven rendered in Blender with Cycles, camera transforms
-read directly from the scene graph, transparent background
-(`scripts/blender_scene.py`). Fixed two-light setup, since the method assumes
-a point has one appearance.
+## 3. Constructed data (78 views, 68 train / 10 test, 776x1046)
 
 | Scene | Material | PSNR | SSIM | LPIPS (vgg) | LPIPS (alex) | Train PSNR |
 |---|---|---|---|---|---|---|
 | Concrete cat statue | matte concrete | 40.943 | 0.982 | 0.039 | 0.020 | 36.28 |
 | Propane tank | weathered paint | 41.004 | 0.987 | 0.033 | 0.019 | 39.54 |
-| Lion head | polished bronze | **42.184** | 0.992 | 0.018 | 0.007 | 39.13 |
+| Lion head | polished bronze | 42.184 | 0.992 | 0.018 | 0.007 | 39.13 |
 | **Blender mean** | | **41.377** | | | | |
-| Phone capture | chocolate tin | **22.180** | 0.873 | 0.155 | 0.136 | 29.80 |
+| Phone capture | chocolate tin | 22.180 | 0.873 | 0.155 | 0.136 | 29.80 |
 
-### The pose-provenance comparison
+**Controlled pose test:** the same 78 cat renders, with poses from COLMAP
+instead of Blender, and the same test views.
 
-Cat (exact poses) 40.94 against the phone capture (COLMAP poses) 22.18, a gap
-of 18.8 dB. This comparison changes two things at once, the pose source and the
-content, so it cannot attribute the gap to either.
-
-### Controlled test: the same renders, with COLMAP poses
-
-The 78 Blender cat renders were composited onto white and passed through the
-same COLMAP pipeline as the phone capture (default quality, single camera,
-undistorted to PINHOLE). Masks come from the render alpha. The converter keeps
-the original 68/10 train/test split, so the test views are identical.
-
-| | exact poses | COLMAP poses |
+| | Exact poses | COLMAP poses |
 |---|---|---|
-| registered images | 78 / 78 | 78 / 78 |
-| mean reprojection error | n/a | 0.47 px |
-| mean track length | n/a | 8.60 |
-| test PSNR | 40.943 | **41.201** |
+| Registered images | 78 / 78 | 78 / 78 |
+| Mean reprojection error | n/a | 0.47 px |
+| Test PSNR | 40.943 | 41.201 |
 | SSIM | 0.982 | 0.987 |
 | LPIPS (vgg) | 0.039 | 0.035 |
-| LPIPS (alex) | 0.020 | 0.021 |
-| train PSNR | 36.28 | 37.78 |
+| Train PSNR | 36.28 | 37.78 |
 
-**Estimated poses cost nothing on identical content.** The 0.26 dB difference
-is within run-to-run noise. Undistortion cropped the images from 776x1046 to
-773x1042, as it does for the phone capture, so the two runs are evaluated on
-very slightly different pixels.
+**Phone capture variants:**
 
-Scope of the claim: COLMAP reached 0.47 px on clean renders against 1.25 px on
-the phone photos. This test shows that COLMAP-quality poses on clean images do
-not limit DVGO. It does not by itself show that the phone's poses cost nothing;
-the extreme-quality rerun below covers that case.
+| Variant | Reprojection error | Test PSNR |
+|---|---|---|
+| SAM 2.1 masks, scene centred by COLMAP | 1.25 px | 22.237 |
+| SAM 2.1 masks, scene centred on the object (final) | 1.25 px | 22.180 |
+| As above, COLMAP at extreme quality | 0.86 px | 21.754 |
 
-Commands for this test:
+## 4. LLM judge
 
-```bash
-colmap automatic_reconstructor --workspace_path ~/cat_colmap \
-    --image_path ~/cat_colmap/images --single_camera 1 --sparse 1 --dense 0
-colmap image_undistorter --image_path ~/cat_colmap/images \
-    --input_path ~/cat_colmap/sparse/0 --output_path ~/cat_colmap/undistorted \
-    --output_type COLMAP --max_image_size 1046
-colmap model_converter --input_path ~/cat_colmap/undistorted/sparse \
-    --output_path ~/cat_colmap/undistorted/sparse_txt --output_type TXT
-python scripts/colmap_to_tnt.py ~/cat_colmap/undistorted data/synth_cat_colmap \
-    --masks ~/cat_colmap/masks --keep-split
-python run.py --config configs/synth/cat_colmap.py --render_test --dump_images
-```
-
-### Phone capture variants
-
-| Variant | Test PSNR |
-|---|---|
-| SAM 2.1 masks, scene centred by COLMAP | 22.237 |
-| SAM 2.1 masks, scene recentred on the object's points (final) | 22.180 |
-| As above, COLMAP rerun at extreme quality, full-resolution solve | 21.754 |
-
-The last one matters. COLMAP's mean reprojection error fell from 1.25 px to
-0.86 px and mean track length rose from 3.94 to 4.85, so the poses genuinely
-improved, and the reconstruction did not.
-
-### Reading the gap honestly
-
-Pose provenance is one contributor, not the whole story:
-
-- **Content differs.** A concrete cat is not a chocolate tin. The proposal
-  called for content "as close as is practical" and this is not that close.
-- **A render has no sensor noise, no motion blur, no auto-exposure drift and
-  fixed illumination.** The phone capture has all four.
-- **Better poses did not help,** which argues directly against pose error
-  being the dominant term.
-- **On identical content, COLMAP poses matched exact poses** (41.20 against
-  40.94), so pose estimation as a process is not what costs quality.
-
-The defensible claim: a hand-held capture costs a large amount of
-reconstruction quality relative to a rendered scene, and two independent tests
-indicate that pose estimation is not the main cause. The remaining candidates
-are the capture itself (sensor noise, motion blur, exposure drift, real
-lighting) and the different object.
-
-### Material has no measurable effect under fixed lighting
-
-Three synthetic scenes, same pipeline, same camera path, same view count,
-differing in surface material.
-
-The most reflective object, polished bronze, scored **highest** at 42.18. This
-is the opposite of the proposal's expectation for reflective scenes. DVGO's
-twelve-dimensional feature grid and two-layer MLP handle rendered specular
-highlights without difficulty.
-
-Two caveats. The lion head is a smooth shape while the cat has thin ears and
-legs, so geometric complexity is confounded with material. And a rendered
-highlight under two fixed lights is far better behaved than a real glossy
-surface under real lighting; DTU scan69's glazed ceramic scored 23.10, which is
-the real-world version of the same question.
-
-Test-path videos are in `media/videos/blender__*.mp4` and
-`media/videos/phone__real_can_sam_v2.mp4`.
-
----
-
-## 5. LLM judge
-
-PSNR, SSIM and LPIPS measure how far a render is from the real image, not what
-is wrong with it. The judge answers one question per render: does it contain
-visible reconstruction artefacts? Setup, files and commands are in
-[`README.md`](README.md#llm-as-judge-judge).
-
-### Validation against human labels
-
-30 renders, 5 per source, labelled by the author without seeing the source or
-PSNR: 13 yes, 17 no. 20 were used to develop the prompt, 10 were held out and
-judged once.
+30 renders, 5 per source, labelled by the author without seeing the source
+or PSNR (13 yes, 17 no); 20 for prompt development, 10 held out. Details in
+[`judge/README.md`](judge/README.md).
 
 | Judge | Prompt | Images | Accuracy | Cohen's kappa |
 |---|---|---|---|---|
@@ -432,21 +173,10 @@ judged once.
 | GPT-6 (ChatGPT, medium) | v2 | all 30 | 0.63 | 0.32 |
 | GPT-6 (ChatGPT, medium) | v2 | 10 held out | 0.50 | 0.19 |
 
-Kappa 0.41 counts as moderate agreement (Landis and Koch, 1977). With only 10
-held-out images, 3 of them positive, it is an uncertain estimate.
+On all 30: Qwen missed 5 of 13 artefacts with no false alarms; GPT-6 missed
+none but flagged 11 of 17 clean renders. Qwen and GPT-6 agree at kappa 0.17.
 
-The two judges fail in opposite directions. Across all 30 images, Qwen missed
-5 of the 13 renders the human labelled yes and raised no false alarms. GPT-6
-said yes to 24 of 30: it caught all 13, but also flagged 11 of the 17 the human
-labelled clean, three of them Blender renders above 40 dB. The two judges agree
-with each other at kappa 0.17.
-
-Prompt v2 differs from v1 in two places: it adds a "ragged edges" item, and
-instead of telling the judge to ignore "the plain white background itself", it
-says an empty white background is fine but anything in it counts. The change
-was made because v1 appeared to make the judge ignore specks in the background.
-
-### The judge on every test render (prompt v2)
+**Qwen (prompt v2) on every test render:**
 
 | Source | Renders | Mean PSNR | Flagged | Mean p(yes) | Spearman (PSNR, p) |
 |---|---|---|---|---|---|
@@ -457,57 +187,37 @@ was made because v1 appeared to make the judge ignore specks in the background.
 | Blender scenes | 30 | 41.30 | 0% | 0.09 | +0.21 |
 | Phone capture | 10 | 22.17 | 50% | 0.51 | -0.60 |
 
-Across all 495 renders, Spearman(PSNR, p) = -0.86. Within each source the link
-is weak. PSNR here is computed from the saved 8-bit images, so it differs
-slightly from sections 1 to 4. lego is the one Synthetic-NeRF scene whose real
-test images were still available.
+Spearman over all 495 renders: -0.86. PSNR here is computed from the saved
+8-bit images, so it differs slightly from the tables above.
 
-The useful result is one comparison: DTU and BlendedMVS have similar PSNR
-(26.7 and 28.4 dB), yet the judge flags 18% of DTU renders and none of
-BlendedMVS. Their errors differ in kind, which PSNR alone does not show.
-Because the judge misses subtle artefacts, the flagged rates are lower bounds.
+## 5. Summary
 
----
-
-## 6. Summary across all data
-
-| Source | Scenes | Mean PSNR | Nature |
+| Source | Scenes | Mean PSNR | Data |
 |---|---|---|---|
-| DeepVoxels | 4 | 45.513 | original, rendered, simple matte objects |
-| Synthetic-NSVF | 8 | 34.933 | original, rendered |
-| Synthetic-NeRF | 8 | 31.900 | original, rendered |
-| Tanks and Temples | 5 | 28.307 | original, real, masked |
-| BlendedMVS | 4 | 28.084 | original, rendered and blended with real photos |
-| DTU (IDR/NeuS subset) | 5 | 26.647 | new existing, real, calibrated rig, masked |
-| Blender scenes | 3 | 41.377 | new, rendered, exact poses |
-| Phone capture | 1 | 22.180 | new, phone, COLMAP poses |
-| DL3DV bounded | 4 | 17.670 | new existing, real, video, unmasked |
+| DeepVoxels | 4 | 45.51 | original, rendered |
+| Blender scenes | 3 | 41.38 | constructed, rendered, exact poses |
+| Synthetic-NSVF | 8 | 34.93 | original, rendered |
+| Synthetic-NeRF | 8 | 31.90 | original, rendered |
+| Tanks and Temples | 5 | 28.31 | original, real, masked |
+| BlendedMVS | 4 | 28.08 | original, rendered meshes blended with photos |
+| DTU | 5 | 26.65 | existing, real, calibrated rig, masked |
+| Phone capture | 1 | 22.18 | constructed, real, COLMAP poses, masked |
+| DL3DV | 4 | 17.67 | existing, real video, no masks |
 
-The ordering is the result. Rendered data with exact poses scores highest.
-Calibrated real data with masks comes within 1.7 dB of the paper's real
-benchmark. A hand-held masked capture is about 6 dB below Tanks and Temples and
-4.5 dB below DTU. Unmasked scene-scale video fails outright regardless of its
-annotations.
+## DL3DV scene hashes
 
----
-
-## Scene index
-
-| Name used here | DL3DV hash |
+| Config | Hash |
 |---|---|
-| non_reflect | a401469cb0fa576b93e836a4a6d712394f1a55a0a53a42250286980bd078e669 |
-| non_reflect2 | 35317e621976e87f0c143e66fc61fb8cddb4ff134304da7a00e32ac1983105b4 |
-| reflect1 | d1b3a0b37acc72207295b05e8c359f8b43bf879eb882c60747cfc6d3c7d8efa3 |
-| reflect2 | d9f4c746e6fa456323601b8ca05357c5585d34663c765107d901b4fd929d784b |
-| (discarded, unbounded) | 0a485338bbdaf19ba9090b874bb36ef0599a9c9a475a382c22903cf5981c6ea6 |
+| `nonreflect.py` | a401469cb0fa576b93e836a4a6d712394f1a55a0a53a42250286980bd078e669 |
+| `nonreflect2.py` | 35317e621976e87f0c143e66fc61fb8cddb4ff134304da7a00e32ac1983105b4 |
+| `reflect1.py` | d1b3a0b37acc72207295b05e8c359f8b43bf879eb882c60747cfc6d3c7d8efa3 |
+| `reflect2.py` | d9f4c746e6fa456323601b8ca05357c5585d34663c765107d901b4fd929d784b |
+| `scene1.py` (discarded) | 0a485338bbdaf19ba9090b874bb36ef0599a9c9a475a382c22903cf5981c6ea6 |
 
 ## Known gaps
 
-- DTU LPIPS-alex recorded for scan114 only.
-- The 22.180 phone-capture run's terminal log was lost; its `eval.txt` survives
-  in the render folder.
-- scan69's view count and material are confounded; the controlled test was not
-  run.
-- The exposure-drift hypothesis for DL3DV is untested.
-- The LLM judge was validated on 10 held-out images with one human labeller, so
-  its agreement figure is uncertain.
+- DTU LPIPS (alex) was recorded for scan114 only.
+- The final phone run's terminal log was lost; its `eval.txt` survives.
+- scan69's view count and glazed surface are confounded.
+- The exposure-drift explanation for DL3DV is untested.
+- The judge's agreement comes from 10 held-out images and one labeller.

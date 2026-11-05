@@ -31,11 +31,7 @@ kept as [`README_upstream.md`](README_upstream.md).
 | Blender scenes | new, built here | 3 | 41.38 | n/a |
 | Phone capture | new, built here | 1 | 22.18 | n/a |
 
-SSIM and LPIPS (VGG and AlexNet) for every scene are in `results.md`.
-
-**LLM judge** (Qwen2.5-VL-7B-Instruct, prompt v2) against the author's labels:
-accuracy 0.80 and Cohen's kappa 0.41 on 10 held-out renders, where always
-answering "no" already scores 0.70. See `results.md`, section 5.
+SSIM and LPIPS for every scene are in `results.md`.
 
 ---
 
@@ -83,18 +79,8 @@ pip install -r requirements-repro.txt
 The upstream `requirements.txt` is kept unchanged for reference.
 The CUDA extensions in `lib/cuda/` compile on first run.
 
-The LLM judge runs in a second environment, because it needs a recent
-`transformers`:
-
-```bash
-conda create -n judge python=3.10
-conda activate judge
-pip install torch==2.10.0 torchvision==0.25.0 transformers==5.20.2 \
-    accelerate scikit-learn scipy pandas pillow
-```
-
-The judge model (about 16 GB in bfloat16) downloads from Hugging Face on first
-run and fits on the 24 GB GPU above.
+The LLM judge uses a second environment, described in
+[`judge/README.md`](judge/README.md).
 
 ---
 
@@ -159,8 +145,8 @@ python scripts/dl3dv_to_tnt.py DL3DV-10K-Benchmark/<hash>/nerfstudio data/dl3dv_
 python run.py --config configs/dl3dv/<name>.py --render_test --dump_images
 ```
 
-`download.py` is the DL3DV authors' download script. Full hashes are in
-`results.md`.
+`download.py` is the DL3DV authors' download script. Full hashes are at the
+end of `results.md`.
 
 | Config | Data folder | Scene | Note |
 |---|---|---|---|
@@ -216,89 +202,27 @@ the phone capture, with masks taken from the render alpha. `--keep-split` keeps
 the original train/test split so the test views match the exact-pose run.
 
 ```bash
+colmap automatic_reconstructor --workspace_path ~/cat_colmap \
+    --image_path ~/cat_colmap/images --single_camera 1 --sparse 1 --dense 0
+colmap image_undistorter --image_path ~/cat_colmap/images \
+    --input_path ~/cat_colmap/sparse/0 --output_path ~/cat_colmap/undistorted \
+    --output_type COLMAP --max_image_size 1046
+colmap model_converter --input_path ~/cat_colmap/undistorted/sparse \
+    --output_path ~/cat_colmap/undistorted/sparse_txt --output_type TXT
 python scripts/colmap_to_tnt.py ~/cat_colmap/undistorted data/synth_cat_colmap \
     --masks ~/cat_colmap/masks --keep-split
 python run.py --config configs/synth/cat_colmap.py --render_test --dump_images
 ```
 
-The full command list is in `results.md`, section 4.
-
 ---
 
-## LLM-as-judge (`judge/`)
+## LLM-as-judge
 
-PSNR, SSIM and LPIPS say how far a render is from the real image, but not what
-is wrong with it. The judge adds one yes/no question per render: does it
-contain visible reconstruction artefacts (floaters, specks, ragged edges,
-holes or broken geometry)?
-
-- **Model:** Qwen2.5-VL-7B-Instruct, run locally in bfloat16. Following the
-  unit's week 9 practical, the verdict is the probability that the next token
-  is *Yes* rather than *No*; above 0.5 counts as yes.
-- **Input:** the render only. The judge never sees the real image.
-- **Human labels:** 30 renders, 5 per source, drawn at random with a fixed seed
-  and shown under anonymous ids, so the labeller could not see the source or
-  PSNR. Labelled by the author with [`LABELLING_GUIDE.md`](judge/LABELLING_GUIDE.md)
-  (13 yes, 17 no). 20 were used to develop the prompt and 10 were held out.
-- **Prompts:** `prompt_v1.txt` matches the labelling guide. `prompt_v2.txt`
-  was written after the development round and is the one reported. The held-out
-  10 were judged once, with v2, and no further changes.
-- **Second judge:** GPT-6 in ChatGPT (medium reasoning), given `prompt_v2.txt`
-  and one image per new chat. Its answers are in `labels_chatgpt.csv`.
-
-Every verdict is committed as a CSV, so every agreement number can be checked
-without a GPU:
-
-```bash
-cd judge
-python - <<'EOF'
-import csv
-from sklearn.metrics import accuracy_score, cohen_kappa_score
-human = {r['id']: r['artefacts'] for r in csv.DictReader(open('labels_eric.csv'))}
-gpt = {r['id']: r['artefacts'] for r in csv.DictReader(open('labels_chatgpt.csv'))}
-held = list(csv.DictReader(open('judge_prompt_v2_heldout.csv')))
-ids = sorted(human)
-h, g = [human[i] for i in ids], [gpt[i] for i in ids]
-print('GPT-6, all 30:   acc %.2f  kappa %.2f' % (accuracy_score(h, g), cohen_kappa_score(h, g)))
-h, q = [r['human'] for r in held], [r['judge'] for r in held]
-print('Qwen, held out:  acc %.2f  kappa %.2f' % (accuracy_score(h, q), cohen_kappa_score(h, q)))
-EOF
-```
-
-To rerun the judge itself (`judge` environment, from `judge/`):
-
-```bash
-python per_image_psnr.py per_image_psnr.csv <log folders>   # per-render PSNR
-python judge.py --prompt prompt_v1.txt --split dev
-python judge.py --prompt prompt_v2.txt --split dev
-python judge.py --prompt prompt_v2.txt --split heldout
-python scale.py        # prompt v2 on every test render, writes judge_scale_v2.csv
-python label.py labels_eric.csv   # the labelling tool: y = artefacts, n = clean, b = back
-```
-
-Three things to know before rerunning:
-
-- `judge.py` reads the 30 images from `judge/samples/`. These are copies of test
-  renders, so they are not committed; they exist once the scenes are trained.
-- `sample.py` draws the 30 images. **Running it again overwrites
-  `samples_key.csv` and resets `labels_eric.csv` to blank**, so do not run it
-  to check the reported numbers.
-- `per_image_psnr.csv` and `samples_key.csv` store absolute paths from the
-  machine used, and `per_image_psnr.py` assumes the repository is at
-  `~/DirectVoxGO`. Regenerate `per_image_psnr.csv` from your own log folders
-  before running `scale.py`.
-
-| File | Contents |
-|---|---|
-| `LABELLING_GUIDE.md` | the guide the human labeller followed |
-| `prompt_v1.txt`, `prompt_v2.txt` | the two judge prompts |
-| `samples_key.csv` | the 30 sampled renders, their split, source and PSNR |
-| `labels_eric.csv`, `labels_chatgpt.csv` | human labels and GPT-6 answers |
-| `judge_prompt_*_{dev,heldout}.csv` | Qwen verdicts with `p_yes` per image |
-| `judge_scale_v2.csv` | Qwen verdicts on all 495 test renders |
-| `per_image_psnr.csv` | PSNR of every test render, from the saved images |
-| `smoke_test.py` | checks the model loads and answers simple questions |
-| `make_results_fig.py`, `make_scene_fig.py` | build the report's render figures and copy the test-path videos |
+A vision-language model (Qwen2.5-VL-7B-Instruct, run locally) answers one
+yes/no question per render: does it show reconstruction artefacts? Checked
+against 30 human labels, it reached Cohen's kappa 0.41 on 10 held-out renders.
+Code, prompts, labels and every verdict are in [`judge/`](judge), explained in
+[`judge/README.md`](judge/README.md).
 
 ---
 

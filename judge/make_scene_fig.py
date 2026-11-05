@@ -12,17 +12,23 @@ spread of quality from several viewpoints rather than one chosen view.
 Also copies each new-data scene's test-path video (video.rgb.mp4) to
 VIDEO_DIR, for the repository.
 
-Usage (from ~/DirectVoxGO/judge, judge env, with the real_can_sam shortcut):
+Usage (from judge/, in the judge env):
     python make_scene_fig.py                              # every source
     python make_scene_fig.py synthetic_nsvf deepvoxels    # only these sources
+Logs are searched in the repository's logs/ folder. Logs kept elsewhere can be
+added with DVGO_EXTRA_LOGS=/path/to/logs (several paths separated by ':').
 Output: fig_scenes/<source>__<scene>_<lo|med|hi>_{render,gt}.jpg, list.csv
 """
 import csv, glob, os, re, shutil, sys
 import numpy as np
 from PIL import Image
 
-LOG_ROOTS = ['/media/eric/LocalDisk/Eric/COMP8240/final_temp_move/logs',
-             os.path.expanduser('~/DirectVoxGO/logs')]
+# repository root (the folder above judge/)
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# log folders to search: the repository's logs/, plus any extra folders listed
+# in DVGO_EXTRA_LOGS (separated by ':'), e.g. logs moved to another disk
+LOG_ROOTS = [os.path.join(ROOT, 'logs')] + [
+    p for p in os.environ.get('DVGO_EXTRA_LOGS', '').split(os.pathsep) if p]
 SOURCES = {
     'synthetic_nerf': ['dvgo_chair', 'dvgo_drums', 'dvgo_ficus', 'dvgo_hotdog',
                        'dvgo_lego', 'dvgo_materials', 'dvgo_mic', 'dvgo_ship'],
@@ -42,7 +48,7 @@ SOURCES = {
 NEW_DATA = {'dtu', 'dl3dv', 'blender', 'phone'}
 FIXED_NERF_VIEW = 182          # lego's median view, used for every NeRF scene
 OUT, MAXSIDE, MARGIN = 'fig_scenes', 420, 20
-VIDEO_DIR = os.path.expanduser('~/DirectVoxGO/media/videos')
+VIDEO_DIR = os.path.join(ROOT, 'media', 'videos')
 
 
 def find_log(scene):

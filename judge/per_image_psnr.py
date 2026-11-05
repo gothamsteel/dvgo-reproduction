@@ -12,7 +12,8 @@ import csv, glob, json, os, re, sys
 import numpy as np
 from PIL import Image
 
-ROOT = os.path.expanduser('~/DirectVoxGO')  # configs use paths relative to this
+# repository root (the folder above judge/); configs use paths relative to it
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def cfg(txt, key):
