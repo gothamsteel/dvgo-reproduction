@@ -14,3 +14,7 @@ DL3DV-10K-Benchmark/
 dvgo_lego_/
 *.log
 judge/samples/
+judge/fig_res/
+judge/fig_scenes/
+judge/*.zip
+judge/tnt_psnr.csv
