@@ -32,10 +32,15 @@ def gt_rgb(a, white):
     return a[..., :3]
 
 
-def test_files(datadir, dtype):
+def test_files(datadir, dtype, scene=None):
     if dtype == 'blender':
         meta = json.load(open(os.path.join(datadir, 'transforms_test.json')))
         return [os.path.join(datadir, f['file_path'] + '.png') for f in meta['frames']]
+    if dtype == 'nsvf':  # Synthetic-NSVF: 0_ train, 1_ validation, 2_ test
+        return [p for p in sorted(glob.glob(os.path.join(datadir, 'rgb', '*png')))
+                if os.path.basename(p).startswith('2_')]
+    if dtype == 'deepvoxels':  # separate test folder per scene
+        return sorted(glob.glob(os.path.join(datadir, 'test', scene, 'rgb', '*png')))
     # tankstemple / blendedmvs loaders: prefix 1_ is the test split
     return [p for p in sorted(glob.glob(os.path.join(datadir, 'rgb', '*png')))
             if os.path.basename(p).startswith('1_')]
@@ -55,7 +60,7 @@ for log in sorted(logs):
         print(f"{name:40s} SKIP, no data at {datadir}")
         continue
     renders = sorted(glob.glob(os.path.join(rdir, '[0-9][0-9][0-9].png')))
-    gts = test_files(datadir, dtype)
+    gts = test_files(datadir, dtype, cfg(txt, 'scene'))
     if len(renders) != len(gts):
         print(f"{name:40s} SKIP, {len(renders)} renders vs {len(gts)} ground truth")
         continue

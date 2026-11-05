@@ -13,10 +13,11 @@ Also copies each new-data scene's test-path video (video.rgb.mp4) to
 VIDEO_DIR, for the repository.
 
 Usage (from ~/DirectVoxGO/judge, judge env, with the real_can_sam shortcut):
-    python make_scene_fig.py
+    python make_scene_fig.py                              # every source
+    python make_scene_fig.py synthetic_nsvf deepvoxels    # only these sources
 Output: fig_scenes/<source>__<scene>_<lo|med|hi>_{render,gt}.jpg, list.csv
 """
-import csv, glob, os, re, shutil
+import csv, glob, os, re, shutil, sys
 import numpy as np
 from PIL import Image
 
@@ -25,6 +26,8 @@ LOG_ROOTS = ['/media/eric/LocalDisk/Eric/COMP8240/final_temp_move/logs',
 SOURCES = {
     'synthetic_nerf': ['dvgo_chair', 'dvgo_drums', 'dvgo_ficus', 'dvgo_hotdog',
                        'dvgo_lego', 'dvgo_materials', 'dvgo_mic', 'dvgo_ship'],
+    'synthetic_nsvf': ['dvgo_Wineholder', 'dvgo_Steamtrain', 'dvgo_Toad', 'dvgo_Robot',
+                       'dvgo_Bike', 'dvgo_Palace', 'dvgo_Spaceship', 'dvgo_Lifestyle'],
     'blendedmvs': ['dvgo_Jade', 'dvgo_Fountain', 'dvgo_Character', 'dvgo_Statues'],
     'tanks_and_temples': ['dvgo_Barn', 'dvgo_Caterpillar', 'dvgo_Family',
                           'dvgo_Ignatius', 'dvgo_Truck'],
@@ -34,6 +37,7 @@ SOURCES = {
               'dvgo_dl3dv_reflect1', 'dvgo_dl3dv_reflect2'],
     'blender': ['dvgo_synth_cat', 'dvgo_synth_propane', 'dvgo_synth_lion'],
     'phone': ['dvgo_real_can_sam_v2'],
+    'deepvoxels': ['dvgo_armchair', 'dvgo_greek', 'dvgo_cube', 'dvgo_vase'],
 }
 NEW_DATA = {'dtu', 'dl3dv', 'blender', 'phone'}
 FIXED_NERF_VIEW = 182          # lego's median view, used for every NeRF scene
@@ -114,7 +118,10 @@ def export(src, sc, tag, log, idx, vpsnr, gt_path, sp):
           f"{'   n/a' if vpsnr is None else f'{vpsnr:6.2f}'}")
 
 
+ONLY = set(sys.argv[1:])  # optional: limit to the named sources
 for src, scenes in SOURCES.items():
+    if ONLY and src not in ONLY:
+        continue
     for sc in scenes:
         log = find_log(sc)
         if log is None:

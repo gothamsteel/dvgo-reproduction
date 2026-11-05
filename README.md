@@ -22,8 +22,10 @@ kept as [`README_upstream.md`](README_upstream.md).
 | Source | Type | Scenes | Mean test PSNR | Paper |
 |---|---|---|---|---|
 | Synthetic-NeRF | original | 8 | 31.90 | 31.95 |
+| Synthetic-NSVF | original | 8 | 34.93 | 35.08 |
 | BlendedMVS | original | 4 | 28.08 | 28.02 |
 | Tanks and Temples | original | 5 | 28.31 | 28.41 |
+| DeepVoxels | original | 4 | 45.51 | 45.83 |
 | DTU (IDR/NeuS subset) | new, existing | 5 | 26.65 | n/a |
 | DL3DV (bounded scenes) | new, existing | 4 | 17.67 | n/a |
 | Blender scenes | new, built here | 3 | 41.38 | n/a |
@@ -107,7 +109,7 @@ path the configs expect.
 | Synthetic-NSVF | <https://dl.fbaipublicfiles.com/nsvf/dataset/Synthetic_NSVF.zip> | `data/Synthetic_NSVF/<scene>` |
 | BlendedMVS (NSVF subset) | <https://dl.fbaipublicfiles.com/nsvf/dataset/BlendedMVS.zip> | `data/BlendedMVS/<scene>` |
 | Tanks and Temples (NSVF masked subset) | <https://dl.fbaipublicfiles.com/nsvf/dataset/TanksAndTemple.zip> | `data/TanksAndTemple/<scene>` |
-| DeepVoxels | `synthetic_scenes.zip` from <https://drive.google.com/drive/folders/1ScsRlnzy9Bd_n-xw83SP-0t548v63mPH> | `data/deepvoxels/[train,validation,test]/<scene>` |
+| DeepVoxels | `synthetic_scenes.zip` from <https://drive.google.com/drive/folders/1ScsRlnzy9Bd_n-xw83SP-0t548v63mPH>. It also holds `bus` and `shoe`, which the paper does not use. | `data/deepvoxels/[train,validation,test]/<scene>` |
 | DTU (IDR/NeuS preprocessed, 15 scans) | NeuS authors' Dropbox, linked from the NeuS repository: <https://www.dropbox.com/scl/fo/um3wj3ctiuoottbfmqmgb/ABZRltszDvWHJ824UL6DHw0?rlkey=3vjok0aivnoiaf8z5j6w05k92&dl=0> | `data/DTU/dtu_scan<N>`, converted to `data/dtu_tnt/` |
 | DL3DV-10K Benchmark | <https://huggingface.co/datasets/DL3DV/DL3DV-10K-Benchmark>. Accept the terms of use on Hugging Face first. | `DL3DV-10K-Benchmark/`, converted to `data/dl3dv_<name>` |
 | Blender models (CC0) | Poly Haven: [concrete cat statue](https://polyhaven.com/a/concrete_cat_statue), [propane tank](https://polyhaven.com/a/propane_tank), [lion head](https://polyhaven.com/a/lion_head) | rendered to `data/synth_<name>` |
@@ -124,12 +126,17 @@ stated otherwise.
 
 ```bash
 python run.py --config configs/nerf/lego.py --render_test --dump_images
+python run.py --config configs/nsvf/Bike.py --render_test --dump_images
 python run.py --config configs/blendedmvs/Jade.py --render_test --dump_images
 python run.py --config configs/tankstemple/Ignatius.py --render_test --dump_images
+python run.py --config configs/deepvoxels/armchair.py --render_test --dump_images
 ```
 
-Replace with any scene under `configs/nerf/`, `configs/blendedmvs/` or
-`configs/tankstemple/`. These configs are the authors', unchanged.
+Replace with any scene under `configs/nerf/`, `configs/nsvf/`,
+`configs/blendedmvs/`, `configs/tankstemple/` or `configs/deepvoxels/`.
+These configs are the authors', unchanged. Without `--dump_images` the test
+views are scored but not saved; `--render_only` re-renders a trained scene
+from its checkpoint.
 
 ### DTU
 

@@ -38,6 +38,28 @@ lego was run twice, six weeks apart on the same machine: 34.641032826900485 and
 34.64103285074234. Agreement to seven decimal places means the remaining
 difference against the paper is not run-to-run variance on our side.
 
+### Synthetic-NSVF, 8 scenes, 100 train / 200 test, 800x800
+
+| Scene | PSNR | Paper PSNR | SSIM | LPIPS (vgg) | LPIPS (alex) | Train time |
+|---|---|---|---|---|---|---|
+| Wineholder | 30.220 | 30.26 | 0.949 | 0.055 | 0.038 | 1:48 |
+| Steamtrain | 36.361 | 36.56 | 0.988 | 0.019 | 0.009 | 2:14 |
+| Toad | 32.988 | 33.10 | 0.965 | 0.046 | 0.030 | 1:54 |
+| Robot | 36.256 | 36.36 | 0.992 | 0.013 | 0.005 | 1:58 |
+| Bike | 38.128 | 38.33 | 0.991 | 0.012 | 0.004 | 1:50 |
+| Palace | 34.276 | 34.49 | 0.961 | 0.044 | 0.028 | 2:30 |
+| Spaceship | 37.524 | 37.71 | 0.987 | 0.020 | 0.009 | 2:25 |
+| Lifestyle | 33.709 | 33.79 | 0.965 | 0.054 | 0.027 | 1:57 |
+| **mean (ours)** | **34.933** | | **0.975** | **0.033** | **0.019** | 2:04 |
+| **paper** | | **35.08** | **0.975** | **0.033** | **0.019** | 13.2 min |
+
+SSIM and both LPIPS averages match the paper exactly. PSNR is 0.15 dB below,
+and all eight scenes are below, by 0.04 to 0.21 dB. Per-scene paper values
+are from supplementary Table L2, the paper's training times from Table K2b
+(RTX 2080 Ti).
+
+---
+
 ### Tanks and Temples, 5 scenes, NSVF masked subset, 1920x1080
 
 | Scene | PSNR | Paper PSNR | SSIM | LPIPS (vgg) | LPIPS (alex) |
@@ -76,6 +98,38 @@ sign, so this reads as run-to-run variation rather than a systematic gap.
 No code changes were needed for this benchmark. Each scene trained in about
 2 min 20 s, against 13.8 min on average reported on an RTX 2080 Ti
 (supplementary Table K2c).
+
+### DeepVoxels, 4 scenes, 479 train / 1000 test, 512x512
+
+| Scene | Paper's name | PSNR | Paper PSNR | SSIM | LPIPS (vgg) | LPIPS (alex) | Train time |
+|---|---|---|---|---|---|---|---|
+| armchair | Chair | 48.390 | 48.48 | 0.997 | 0.017 | 0.007 | 2:15 |
+| greek | Pedestal | 48.517 | 48.51 | 0.998 | 0.003 | 0.001 | 2:10 |
+| cube | Cube | 43.256 | 43.77 | 0.998 | 0.002 | 0.002 | 2:00 |
+| vase | Vase | 41.890 | 42.54 | 0.997 | 0.005 | 0.002 | 2:19 |
+| **mean (ours)** | | **45.513** | | **0.998** | **0.007** | **0.003** | 2:11 |
+| **paper** | | | **45.83** | **0.998** | **0.006** | **0.002** | 14.3 min |
+
+The dataset folders are `armchair`, `greek`, `cube` and `vase`; supplementary
+Table L5 calls them Chair, Pedestal, Cube and Vase. The scores confirm the
+match (armchair 48.39 against Chair 48.48, greek 48.52 against Pedestal
+48.51). The download also holds two scenes the paper does not use, `bus` and
+`shoe`. DVGO printed cube's training time as `00:01:60`, a rounding quirk in
+its timer, so about 2:00.
+
+The mean is 0.32 dB below the paper, the largest gap of the five benchmarks,
+and it comes from cube (-0.51) and vase (-0.65). At these scores PSNR is very
+sensitive. Converted to root-mean-square error on a 0 to 255 scale, the
+paper's 42.54 dB on vase is 1.90 grey levels and our 41.89 dB is 2.05, a
+difference of 0.15 grey levels. For comparison, ficus on Synthetic-NeRF
+(-0.20 dB at 32.6 dB) differs by 0.13 grey levels. The authors' own
+`IMPROVING_LOG.md` states: "The PSNRs of different versions on different
+machines have about 0.2 PSNR drift."
+
+Synthetic-NSVF and DeepVoxels were trained without `--dump_images`, then
+re-rendered from the saved checkpoints with
+`--render_only --render_test --dump_images`. All 12 scenes gave exactly the
+same test PSNR the second time.
 
 ### Two loader bugs found while reproducing
 
@@ -419,6 +473,8 @@ Because the judge misses subtle artefacts, the flagged rates are lower bounds.
 
 | Source | Scenes | Mean PSNR | Nature |
 |---|---|---|---|
+| DeepVoxels | 4 | 45.513 | original, rendered, simple matte objects |
+| Synthetic-NSVF | 8 | 34.933 | original, rendered |
 | Synthetic-NeRF | 8 | 31.900 | original, rendered |
 | Tanks and Temples | 5 | 28.307 | original, real, masked |
 | BlendedMVS | 4 | 28.084 | original, rendered and blended with real photos |
@@ -447,7 +503,6 @@ annotations.
 
 ## Known gaps
 
-- Synthetic-NSVF and DeepVoxels, two of the paper's five benchmarks, were not run.
 - DTU LPIPS-alex recorded for scan114 only.
 - The 22.180 phone-capture run's terminal log was lost; its `eval.txt` survives
   in the render folder.
