@@ -236,7 +236,8 @@ python run.py --config configs/synth/cat_colmap.py --render_test --dump_images
 A vision-language model (Qwen2.5-VL-7B-Instruct, run locally) answers one
 yes/no question per render: does it show reconstruction artefacts? On 40
 held-out renders it agreed with the author at Cohen's kappa 0.38, about as
-well as a second human labeller did (0.42), and with that labeller at 0.78.
+well as a second human labeller did on the same renders (0.34), and with
+that labeller at 0.78.
 Code, prompts, labels and every verdict are in [`judge/`](judge), explained in
 [`judge/README.md`](judge/README.md).
 

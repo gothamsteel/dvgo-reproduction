@@ -200,12 +200,13 @@ labelling guide, labelled all 60 in shuffled order. Details in
 
 On the first 30: Qwen missed 5 of 13 artefacts with no false alarms; GPT-6
 missed none but flagged 11 of 17 clean renders. Qwen and GPT-6 agree at
-kappa 0.17. On the 40 held out, all 11 of Qwen's errors are misses.
+kappa 0.17. On the 40 held out, all 13 of Qwen's errors are misses.
 
 **Against the second labeller:**
 
 | Pair | Images | Agreement | Cohen's kappa |
 |---|---|---|---|
+| Author vs second labeller | 40 held out | 0.65 | 0.34 |
 | Author vs second labeller | all 60 | 0.70 | 0.42 |
 | Qwen vs second labeller | all 60 | 0.93 | 0.82 |
 | Qwen vs second labeller | 40 held out | 0.93 | 0.78 |
