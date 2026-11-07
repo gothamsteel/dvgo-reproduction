@@ -143,8 +143,9 @@ from the saved 8-bit renders; on DTU only the object is scored.
 | DTU scan114 | 56 | 30.42 | 30.48 | +0.06 |
 | DTU scan118 | 56 | 30.99 | 31.11 | +0.12 |
 
-The correction barely helps DL3DV, no more than DTU, so exposure changes do
-not explain the failure.
+The correction barely helps DL3DV, no more than DTU, so a per-frame change
+of brightness or white balance does not explain the failure. Other exposure
+effects, such as a changing tone curve or motion blur, were not tested.
 
 A fifth scene, 0a485338, was discarded because DL3DV labels it unbounded.
 
@@ -268,6 +269,6 @@ Spearman over all 495 renders: -0.86. PSNR here is computed from the saved
 - DTU LPIPS (alex) was recorded for scan114 only.
 - The final phone run's terminal log was lost; its `eval.txt` survives.
 - scan69's view count and glazed surface are confounded.
-- The cause of the DL3DV failure is still unknown; exposure changes are ruled out.
+- The cause of the DL3DV failure is still unknown; a per-frame brightness or colour change does not explain it.
 - The second labeller labelled once; there is no third labeller to settle borderline cases.
 - GPT-6 was only run on the first 30 renders.
