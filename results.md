@@ -28,7 +28,9 @@ Test-path videos for every new-data scene are in `media/videos/`.
 
 lego was trained twice, six weeks apart: 34.641032826900485 and
 34.64103285074234, equal to seven decimal places, so training is effectively
-deterministic on this machine.
+deterministic with one software setup. A fresh install on the same machine
+(see the README) gave 34.673, so changing the software alone moves the result
+by a few hundredths of a dB.
 
 ### Synthetic-NSVF (8 scenes, 100 train / 200 test, 800x800)
 
