@@ -72,12 +72,19 @@ Tested on:
 ```bash
 conda create -n dvgo python=3.10
 conda activate dvgo
+export PYTHONNOUSERSITE=1   # ignore packages in ~/.local, if any
 pip install -r requirements-repro.txt
 ```
 
-`requirements-repro.txt` is the exact `pip freeze` of the environment used.
-The upstream `requirements.txt` is kept unchanged for reference.
-The CUDA extensions in `lib/cuda/` compile on first run.
+`requirements-repro.txt` pins every package DVGO imports to the version used
+for the report; `torch_scatter` comes from the PyG wheel index named in the
+file. The upstream `requirements.txt` is kept unchanged for reference.
+The CUDA extensions in `lib/cuda/` compile on first run, which needs `nvcc`
+from a CUDA toolkit (12.8 or newer; 13.0 was used).
+
+Checked from a fresh clone and a fresh environment on 7 November 2026:
+`lego` scored 34.673 dB (34.641 in the report; IMPROVING_LOG.md notes about
+0.2 dB drift between setups).
 
 The LLM judge uses a second environment, described in
 [`judge/README.md`](judge/README.md).
@@ -219,8 +226,9 @@ python run.py --config configs/synth/cat_colmap.py --render_test --dump_images
 ## LLM-as-judge
 
 A vision-language model (Qwen2.5-VL-7B-Instruct, run locally) answers one
-yes/no question per render: does it show reconstruction artefacts? Checked
-against 30 human labels, it reached Cohen's kappa 0.41 on 10 held-out renders.
+yes/no question per render: does it show reconstruction artefacts? On 40
+held-out renders it agreed with the author at Cohen's kappa 0.38, about as
+well as a second human labeller did (0.42), and with that labeller at 0.78.
 Code, prompts, labels and every verdict are in [`judge/`](judge), explained in
 [`judge/README.md`](judge/README.md).
 
@@ -238,6 +246,8 @@ Code, prompts, labels and every verdict are in [`judge/`](judge), explained in
 | `scripts/colmap_to_tnt.py` | COLMAP to Tanks and Temples layout, centres on masked points |
 | `scripts/sam2_masks.py` | object masks with SAM 2.1 video propagation |
 | `scripts/blender_scene.py` | headless Blender render with exact camera poses |
+| `scripts/exposure_test.py` | per-frame colour correction test for the DL3DV failure |
+| `results/exposure_test.csv` | its output |
 | `download.py` | DL3DV scene downloader, from the DL3DV authors |
 | `judge/` | LLM-as-judge code, prompts, labels and verdicts |
 | `media/videos/` | DVGO renderings along the test camera path, one video per new-data scene |

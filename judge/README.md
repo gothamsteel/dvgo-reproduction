@@ -32,6 +32,11 @@ holes or broken geometry)?
   and shown under anonymous ids, so the labeller could not see the source or
   PSNR. Labelled by the author with [`LABELLING_GUIDE.md`](LABELLING_GUIDE.md)
   (13 yes, 17 no). 20 were used to develop the prompt and 10 were held out.
+- **Round 2:** after the prompt was fixed, `sample_extra.py` drew 30 more
+  (seed 2, ids s31 to s60, never a render from round 1). The author labelled
+  them the same way (`labels_eric_extra.csv`), giving 40 held-out renders.
+- **Second labeller:** another person, given only the labelling guide,
+  labelled all 60 in shuffled order (`labels_friend.csv`).
 - **Prompts:** `prompt_v1.txt` matches the labelling guide. `prompt_v2.txt`
   was written after the development round and is the one reported. The held-out
   10 were judged once, with v2, and no further changes.
@@ -53,8 +58,14 @@ held = list(csv.DictReader(open('judge_prompt_v2_heldout.csv')))
 ids = sorted(human)
 h, g = [human[i] for i in ids], [gpt[i] for i in ids]
 print('GPT-6, all 30:   acc %.2f  kappa %.2f' % (accuracy_score(h, g), cohen_kappa_score(h, g)))
+held += list(csv.DictReader(open('judge_prompt_v2_extra.csv')))
 h, q = [r['human'] for r in held], [r['judge'] for r in held]
-print('Qwen, held out:  acc %.2f  kappa %.2f' % (accuracy_score(h, q), cohen_kappa_score(h, q)))
+print('Qwen, 40 held out:  acc %.2f  kappa %.2f' % (accuracy_score(h, q), cohen_kappa_score(h, q)))
+human.update({r['id']: r['artefacts'] for r in csv.DictReader(open('labels_eric_extra.csv'))})
+friend = {r['id']: r['artefacts'] for r in csv.DictReader(open('labels_friend.csv'))}
+ids = sorted(human)
+a, b = [human[i] for i in ids], [friend[i] for i in ids]
+print('Author vs second labeller, 60:  acc %.2f  kappa %.2f' % (accuracy_score(a, b), cohen_kappa_score(a, b)))
 EOF
 ```
 
@@ -67,6 +78,8 @@ python per_image_psnr.py per_image_psnr.csv <log folders>   # per-render PSNR
 python judge.py --prompt prompt_v1.txt --split dev
 python judge.py --prompt prompt_v2.txt --split dev
 python judge.py --prompt prompt_v2.txt --split heldout
+python judge.py --prompt prompt_v2.txt --split extra \
+    --key samples_key_extra.csv --labels labels_eric_extra.csv
 python scale.py        # prompt v2 on every test render, writes judge_scale_v2.csv
 python label.py labels_eric.csv   # the labelling tool: y = artefacts, n = clean, b = back
 ```
@@ -77,7 +90,8 @@ Three things to know before rerunning:
   renders, so they are not committed; they exist once the scenes are trained.
 - `sample.py` draws the 30 images. **Running it again overwrites
   `samples_key.csv` and resets `labels_eric.csv` to blank**, so do not run it
-  to check the reported numbers.
+  to check the reported numbers. `sample_extra.py` refuses to run if its
+  output files already exist.
 - `per_image_psnr.csv` and `samples_key.csv` store absolute paths from the
   machine used. Regenerate `per_image_psnr.csv` from your own log folders
   before running `scale.py`. The scripts find the repository from their own
@@ -90,9 +104,12 @@ Three things to know before rerunning:
 |---|---|
 | `LABELLING_GUIDE.md` | the guide the human labeller followed |
 | `prompt_v1.txt`, `prompt_v2.txt` | the two judge prompts |
-| `samples_key.csv` | the 30 sampled renders, their split, source and PSNR |
-| `labels_eric.csv`, `labels_chatgpt.csv` | human labels and GPT-6 answers |
-| `judge_prompt_*_{dev,heldout}.csv` | Qwen verdicts with `p_yes` per image |
+| `samples_key.csv`, `samples_key_extra.csv` | the sampled renders (rounds 1 and 2), their split, source and PSNR |
+| `labels_eric.csv`, `labels_eric_extra.csv` | the author's labels, rounds 1 and 2 |
+| `labels_friend.csv` | the second labeller's labels for all 60 |
+| `labels_chatgpt.csv` | GPT-6 answers for round 1 |
+| `judge_prompt_*_{dev,heldout,extra}.csv` | Qwen verdicts with `p_yes` per image |
+| `sample.py`, `sample_extra.py` | draw rounds 1 and 2 |
 | `judge_scale_v2.csv` | Qwen verdicts on all 495 test renders |
 | `per_image_psnr.csv` | PSNR of every test render, from the saved images |
 | `smoke_test.py` | checks the model loads and answers simple questions |

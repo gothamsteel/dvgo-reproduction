@@ -121,10 +121,30 @@ point is (823.2, 619.1).
 | d9f4c746 | reflective | 325 | 19.536 | 0.651 | 0.498 | 23.17 |
 | **mean** | | | **17.670** | | | |
 
-| Ruled-out cause | Test | Result |
+| Tested cause | Test | Result |
 |---|---|---|
 | Voxel resolution | 256^3 grid on a401469c | test 16.676 (was 16.762), train 24.92 (was 23.95) |
 | Lens distortion | per-pixel error, image edges vs centre | ratio 1.18, error spread evenly |
+| Changing exposure | per-frame gain and offset per channel, training views | +0.01 to +0.04 dB (DTU control: +0.02 to +0.12 dB) |
+
+Exposure test (`scripts/exposure_test.py`, output in
+`results/exposure_test.csv`). Training PSNR here is over the whole image,
+from the saved 8-bit renders; on DTU only the object is scored.
+
+| Scene | Train views | Train PSNR | Colour-corrected | Gain |
+|---|---|---|---|---|
+| DL3DV a401469c | 314 | 24.13 | 24.17 | +0.04 |
+| DL3DV 35317e62 | 333 | 24.04 | 24.07 | +0.03 |
+| DL3DV d1b3a0b3 | 279 | 23.28 | 23.32 | +0.04 |
+| DL3DV d9f4c746 | 284 | 23.30 | 23.31 | +0.01 |
+| DTU scan69 | 42 | 31.68 | 31.70 | +0.02 |
+| DTU scan97 | 56 | 28.87 | 28.92 | +0.05 |
+| DTU scan105 | 56 | 32.61 | 32.66 | +0.05 |
+| DTU scan114 | 56 | 30.42 | 30.48 | +0.06 |
+| DTU scan118 | 56 | 30.99 | 31.11 | +0.12 |
+
+The correction barely helps DL3DV, no more than DTU, so exposure changes do
+not explain the failure.
 
 A fifth scene, 0a485338, was discarded because DL3DV labels it unbounded.
 
@@ -160,21 +180,49 @@ instead of Blender, and the same test views.
 
 ## 4. LLM judge
 
-30 renders, 5 per source, labelled by the author without seeing the source
-or PSNR (13 yes, 17 no); 20 for prompt development, 10 held out. Details in
+Round 1: 30 renders, 5 per source, labelled by the author without seeing
+the source or PSNR (13 yes, 17 no); 20 for prompt development, 10 held out.
+Round 2: 30 more drawn with a new seed and labelled the same way (19 yes),
+all held out, so 40 held out in total. A second labeller, given only the
+labelling guide, labelled all 60 in shuffled order. Details in
 [`judge/README.md`](judge/README.md).
 
 | Judge | Prompt | Images | Accuracy | Cohen's kappa |
 |---|---|---|---|---|
 | Qwen2.5-VL-7B | v1 | 20 development | 0.85 | 0.70 |
 | Qwen2.5-VL-7B | v2 | 20 development | 0.85 | 0.70 |
-| **Qwen2.5-VL-7B** | **v2** | **10 held out** | **0.80** | **0.41** |
-| Always "no" | | 10 held out | 0.70 | 0.00 |
+| Qwen2.5-VL-7B | v2 | 10 held out (round 1) | 0.80 | 0.41 |
+| Qwen2.5-VL-7B | v2 | 30 held out (round 2) | 0.63 | 0.35 |
+| **Qwen2.5-VL-7B** | **v2** | **40 held out** | **0.68** | **0.38** |
+| Always "yes" | | 40 held out | 0.55 | 0.00 |
 | GPT-6 (ChatGPT, medium) | v2 | all 30 | 0.63 | 0.32 |
 | GPT-6 (ChatGPT, medium) | v2 | 10 held out | 0.50 | 0.19 |
 
-On all 30: Qwen missed 5 of 13 artefacts with no false alarms; GPT-6 missed
-none but flagged 11 of 17 clean renders. Qwen and GPT-6 agree at kappa 0.17.
+On the first 30: Qwen missed 5 of 13 artefacts with no false alarms; GPT-6
+missed none but flagged 11 of 17 clean renders. Qwen and GPT-6 agree at
+kappa 0.17. On the 40 held out, all 11 of Qwen's errors are misses.
+
+**Against the second labeller:**
+
+| Pair | Images | Agreement | Cohen's kappa |
+|---|---|---|---|
+| Author vs second labeller | all 60 | 0.70 | 0.42 |
+| Qwen vs second labeller | all 60 | 0.93 | 0.82 |
+| Qwen vs second labeller | 40 held out | 0.93 | 0.78 |
+
+Renders labelled as having artefacts:
+
+| Source | Author, round 1 | Author, round 2 | Second labeller | Qwen |
+|---|---|---|---|---|
+| Synthetic-NeRF | 0 of 5 | 0 of 5 | 0 of 10 | 0 of 10 |
+| BlendedMVS | 0 of 5 | 4 of 5 | 0 of 10 | 0 of 10 |
+| DTU | 3 of 5 | 5 of 5 | 0 of 10 | 1 of 10 |
+| DL3DV | 5 of 5 | 5 of 5 | 10 of 10 | 10 of 10 |
+| Blender scenes | 0 of 5 | 0 of 5 | 0 of 10 | 0 of 10 |
+| Phone capture | 5 of 5 | 5 of 5 | 4 of 10 | 5 of 10 |
+
+The author flags very small floaters, the second labeller only clear damage,
+and Qwen sides with the second labeller.
 
 **Qwen (prompt v2) on every test render:**
 
@@ -219,5 +267,6 @@ Spearman over all 495 renders: -0.86. PSNR here is computed from the saved
 - DTU LPIPS (alex) was recorded for scan114 only.
 - The final phone run's terminal log was lost; its `eval.txt` survives.
 - scan69's view count and glazed surface are confounded.
-- The exposure-drift explanation for DL3DV is untested.
-- The judge's agreement comes from 10 held-out images and one labeller.
+- The cause of the DL3DV failure is still unknown; exposure changes are ruled out.
+- The second labeller labelled once; there is no third labeller to settle borderline cases.
+- GPT-6 was only run on the first 30 renders.

@@ -5,6 +5,8 @@ and comes with a confidence. Compares against human labels with accuracy and
 Cohen's kappa, plus a lazy annotator that always gives the majority label.
 
 Usage: python judge.py --prompt prompt_v1.txt --split dev
+       python judge.py --prompt prompt_v2.txt --split extra \
+           --key samples_key_extra.csv --labels labels_eric_extra.csv
 """
 import argparse, csv, os, torch
 from collections import Counter
@@ -14,12 +16,13 @@ from transformers import AutoProcessor, AutoModelForImageTextToText
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--prompt', default='prompt_v1.txt')
-ap.add_argument('--split', default='dev', choices=['dev', 'heldout', 'all'])
+ap.add_argument('--split', default='dev', choices=['dev', 'heldout', 'extra', 'all'])
+ap.add_argument('--key', default='samples_key.csv')
 ap.add_argument('--labels', default='labels_eric.csv')
 ap.add_argument('--model', default='Qwen/Qwen2.5-VL-7B-Instruct')
 args = ap.parse_args()
 
-key = [r for r in csv.DictReader(open('samples_key.csv'))
+key = [r for r in csv.DictReader(open(args.key))
        if args.split == 'all' or r['split'] == args.split]
 human = {r['id']: r['artefacts'] for r in csv.DictReader(open(args.labels))}
 prompt = open(args.prompt).read().strip()
