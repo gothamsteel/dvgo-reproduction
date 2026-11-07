@@ -106,7 +106,7 @@ path the configs expect.
 | DTU (IDR/NeuS preprocessed, 15 scans) | NeuS authors' Dropbox, linked from the NeuS repository: <https://www.dropbox.com/scl/fo/um3wj3ctiuoottbfmqmgb/ABZRltszDvWHJ824UL6DHw0?rlkey=3vjok0aivnoiaf8z5j6w05k92&dl=0> | `data/DTU/dtu_scan<N>`, converted to `data/dtu_tnt/` |
 | DL3DV-10K Benchmark | <https://huggingface.co/datasets/DL3DV/DL3DV-10K-Benchmark>. Accept the terms of use on Hugging Face first. | `DL3DV-10K-Benchmark/`, converted to `data/dl3dv_<name>` |
 | Blender models (CC0) | Poly Haven: [concrete cat statue](https://polyhaven.com/a/concrete_cat_statue), [propane tank](https://polyhaven.com/a/propane_tank), [lion head](https://polyhaven.com/a/lion_head) | rendered to `data/synth_<name>` |
-| Phone capture | Taken for this project. Not included in this repository. | `data/real_can_sam_v2` |
+| Phone capture | Taken for this project. The processed capture (78 masked PNGs, poses, intrinsics) is in [`phone_capture/real_can_sam_v2`](phone_capture/real_can_sam_v2); the images carry no metadata. Copy or link it to the path on the right. | `data/real_can_sam_v2` |
 
 ---
 
@@ -178,7 +178,15 @@ from Blender, so the poses are exact.
 
 ### Phone capture
 
-Needs [COLMAP](https://colmap.github.io/) and
+To retrain from the released capture only:
+
+```bash
+mkdir -p data && ln -s ../phone_capture/real_can_sam_v2 data/real_can_sam_v2
+python run.py --config configs/real/can_sam_v2.py --render_test --dump_images
+```
+
+Rebuilding it from the raw photos (not released) needs
+[COLMAP](https://colmap.github.io/) and
 [SAM 2](https://github.com/facebookresearch/sam2) with the
 `sam2.1_hiera_large.pt` checkpoint.
 
